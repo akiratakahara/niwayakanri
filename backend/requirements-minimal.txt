@@ -1,0 +1,38 @@
+# 最小限の requirements.txt（開発開始用）
+# 基本的なFastAPIアプリケーションのみ
+
+# FastAPI and dependencies
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# Database (SQLite for development)
+sqlalchemy==2.0.23
+
+# Authentication
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.6
+
+# HTTP client
+httpx==0.25.2
+aiofiles==23.2.1
+
+# Validation
+email-validator==2.1.0
+
+# Environment
+python-dotenv==1.0.0
+
+# CORS
+fastapi-cors==0.0.6
+
+# Date/Time
+python-dateutil==2.8.2
+
+# Logging
+structlog==23.2.0
+
+
+
