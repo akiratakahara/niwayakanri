@@ -1,7 +1,17 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends, status
+from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime, date
+
+from app.core.auth import get_current_admin_user, get_current_user
+from app.core.database import get_db
+from app.models.database import (
+    User, Request as RequestModel, LeaveRequest as LeaveRequestModel,
+    OvertimeRequest as OvertimeRequestModel, ExpenseRequest as ExpenseRequestModel,
+    ReimbursementRequest as ReimbursementRequestModel, SettlementRequest as SettlementRequestModel,
+    HolidayWorkRequest as HolidayWorkRequestModel, ExpenseLine as ExpenseLineModel
+)
 
 router = APIRouter()
 
@@ -29,129 +39,527 @@ class OvertimeRequest(BaseModel):
     total_hours: float
     reason: str
 
-class ExpenseRequest(BaseModel):
-    expense_type: str
-    purpose: str
-    total_amount: int
-    vendor: Optional[str] = None
-    occurred_date: date
+class HolidayWorkRequest(BaseModel):
+    """休日出勤申請"""
+    work_date: date
+    start_time: str
+    end_time: str
+    break_time: Optional[int] = 0
+    work_content: str
+    reason: str
+    compensatory_leave_date: Optional[date] = None
 
-@router.get("/", response_model=List[Request])
-async def get_requests():
+class AdvancePaymentRequest(BaseModel):
+    """仮払金申請"""
+    applicant_name: str
+    site_name: str
+    application_date: date
+    request_amount: int
+
+class ExpenseLine(BaseModel):
+    """精算明細"""
+    date: date
+    item: str
+    site_name: Optional[str] = None
+    tax_type: str
+    amount: int
+
+class SettlementRequest(BaseModel):
+    """精算申請"""
+    expense_type: str
+    advance_payment_request_id: str
+    settlement_date: date
+    expense_lines: List[ExpenseLine]
+    total_amount: int
+    balance_amount: int
+
+class ReimbursementRequest(BaseModel):
+    """立替金申請"""
+    applicant_name: str
+    application_date: date
+    site_name: str
+    expense_lines: List[ExpenseLine]
+    total_amount: int
+
+class ApproveRequestBody(BaseModel):
+    """承認リクエストボディ"""
+    comment: Optional[str] = None
+    received_date: Optional[date] = None
+
+@router.get("/")
+async def get_requests(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
     """
     申請一覧を取得
     """
-    # 簡単な実装（後でデータベースから取得）
-    return [
-        Request(
-            id="1",
-            type="leave",
-            applicant_id="2",
-            status="applied",
-            title="有給休暇申請",
-            description="家族旅行のため",
-            applied_at=datetime.now(),
-            created_at=datetime.now()
-        ),
-        Request(
-            id="2",
-            type="overtime",
-            applicant_id="2",
-            status="approved",
-            title="残業申請",
-            description="プロジェクトの締切対応",
-            applied_at=datetime.now(),
-            created_at=datetime.now()
-        )
-    ]
+    # データベースから申請を取得
+    query = db.query(RequestModel)
+
+    # 管理者以外は自分の申請のみ表示
+    if current_user.get("role") != "admin":
+        query = query.filter(RequestModel.applicant_id == current_user["id"])
+
+    requests = query.order_by(RequestModel.created_at.desc()).all()
+
+    # レスポンスデータを構築
+    requests_data = []
+    for req in requests:
+        applicant = db.query(User).filter(User.id == req.applicant_id).first()
+
+        request_dict = {
+            "id": str(req.id),
+            "type": req.type,
+            "applicant_id": str(req.applicant_id),
+            "applicant_name": applicant.name if applicant else "不明",
+            "status": req.status,
+            "title": req.title,
+            "description": req.description,
+            "applied_at": req.applied_at.isoformat() if req.applied_at else None,
+            "created_at": req.created_at.isoformat()
+        }
+
+        # 仮払金申請の追加情報
+        if req.type == "expense":
+            expense = db.query(ExpenseRequestModel).filter(
+                ExpenseRequestModel.request_id == req.id
+            ).first()
+            if expense:
+                request_dict.update({
+                    "site_name": expense.site_name,
+                    "request_amount": expense.request_amount,
+                    "application_date": expense.application_date.isoformat(),
+                    "received_date": expense.received_date.isoformat() if expense.received_date else None,
+                    "is_settled": False  # TODO: 精算済みフラグの判定
+                })
+
+        requests_data.append(request_dict)
+
+    return {
+        "success": True,
+        "data": requests_data,
+        "total": len(requests_data)
+    }
 
 @router.get("/{request_id}", response_model=Request)
-async def get_request(request_id: str):
+async def get_request(
+    request_id: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
     """
     特定の申請を取得
     """
-    if request_id == "1":
-        return Request(
-            id="1",
-            type="leave",
-            applicant_id="2",
-            status="applied",
-            title="有給休暇申請",
-            description="家族旅行のため",
-            applied_at=datetime.now(),
-            created_at=datetime.now()
-        )
-    
-    raise HTTPException(status_code=404, detail="申請が見つかりません")
+    request = db.query(RequestModel).filter(RequestModel.id == int(request_id)).first()
+
+    if not request:
+        raise HTTPException(status_code=404, detail="申請が見つかりません")
+
+    # 管理者以外は自分の申請のみ閲覧可能
+    if current_user.get("role") != "admin" and request.applicant_id != current_user["id"]:
+        raise HTTPException(status_code=403, detail="この申請を閲覧する権限がありません")
+
+    return Request(
+        id=str(request.id),
+        type=request.type,
+        applicant_id=str(request.applicant_id),
+        status=request.status,
+        title=request.title,
+        description=request.description,
+        applied_at=request.applied_at,
+        created_at=request.created_at
+    )
 
 @router.post("/leave", response_model=Request)
-async def create_leave_request(request: LeaveRequest):
+async def create_leave_request(
+    request: LeaveRequest,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
     """
     休暇申請を作成
     """
-    # 簡単な実装（後でデータベースに保存）
-    return Request(
-        id="3",
+    # 親リクエストを作成
+    new_request = RequestModel(
         type="leave",
-        applicant_id="2",
+        applicant_id=current_user["id"],
         status="draft",
-        title="有給休暇申請",
-        description=request.reason,
-        created_at=datetime.now()
+        title=f"{request.leave_type}申請",
+        description=request.reason
+    )
+    db.add(new_request)
+    db.flush()  # IDを取得するため
+
+    # 休暇申請詳細を作成
+    leave_request = LeaveRequestModel(
+        request_id=new_request.id,
+        leave_type=request.leave_type,
+        start_date=request.start_date,
+        end_date=request.end_date,
+        days=request.days,
+        reason=request.reason
+    )
+    db.add(leave_request)
+    db.commit()
+    db.refresh(new_request)
+
+    return Request(
+        id=str(new_request.id),
+        type=new_request.type,
+        applicant_id=str(new_request.applicant_id),
+        status=new_request.status,
+        title=new_request.title,
+        description=new_request.description,
+        applied_at=new_request.applied_at,
+        created_at=new_request.created_at
     )
 
 @router.post("/overtime", response_model=Request)
-async def create_overtime_request(request: OvertimeRequest):
+async def create_overtime_request(
+    request: OvertimeRequest,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
     """
     時間外労働申請を作成
     """
-    # 簡単な実装（後でデータベースに保存）
-    return Request(
-        id="4",
+    # 親リクエストを作成
+    new_request = RequestModel(
         type="overtime",
-        applicant_id="2",
+        applicant_id=current_user["id"],
         status="draft",
         title="時間外労働申請",
-        description=request.reason,
-        created_at=datetime.now()
+        description=request.reason
+    )
+    db.add(new_request)
+    db.flush()
+
+    # 残業申請詳細を作成
+    overtime_request = OvertimeRequestModel(
+        request_id=new_request.id,
+        work_date=request.work_date,
+        start_time=request.start_time,
+        end_time=request.end_time,
+        total_hours=request.total_hours,
+        reason=request.reason
+    )
+    db.add(overtime_request)
+    db.commit()
+    db.refresh(new_request)
+
+    return Request(
+        id=str(new_request.id),
+        type=new_request.type,
+        applicant_id=str(new_request.applicant_id),
+        status=new_request.status,
+        title=new_request.title,
+        description=new_request.description,
+        applied_at=new_request.applied_at,
+        created_at=new_request.created_at
     )
 
 @router.post("/expense", response_model=Request)
-async def create_expense_request(request: ExpenseRequest):
+async def create_expense_request(
+    request: AdvancePaymentRequest,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
     """
-    仮払・立替申請を作成
+    仮払金申請を作成
     """
-    # 簡単な実装（後でデータベースに保存）
-    return Request(
-        id="5",
+    # 親リクエストを作成
+    new_request = RequestModel(
         type="expense",
-        applicant_id="2",
+        applicant_id=current_user["id"],
         status="draft",
-        title="仮払申請",
-        description=request.purpose,
-        created_at=datetime.now()
+        title=f"仮払金申請 - {request.site_name}",
+        description=f"申請者: {request.applicant_name}, 現場: {request.site_name}, 金額: ¥{request.request_amount:,}"
+    )
+    db.add(new_request)
+    db.flush()
+
+    # 仮払金申請詳細を作成
+    expense_request = ExpenseRequestModel(
+        request_id=new_request.id,
+        applicant_name=request.applicant_name,
+        site_name=request.site_name,
+        application_date=request.application_date,
+        request_amount=request.request_amount
+    )
+    db.add(expense_request)
+    db.commit()
+    db.refresh(new_request)
+
+    return Request(
+        id=str(new_request.id),
+        type=new_request.type,
+        applicant_id=str(new_request.applicant_id),
+        status=new_request.status,
+        title=new_request.title,
+        description=new_request.description,
+        applied_at=new_request.applied_at,
+        created_at=new_request.created_at
+    )
+
+@router.post("/expense-settlement", response_model=Request)
+async def create_settlement_request(
+    request: SettlementRequest,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    仮払金精算を作成
+    """
+    # 仮払金申請の存在確認
+    advance_request = db.query(ExpenseRequestModel).filter(
+        ExpenseRequestModel.id == int(request.advance_payment_request_id)
+    ).first()
+
+    if not advance_request:
+        raise HTTPException(status_code=404, detail="仮払金申請が見つかりません")
+
+    # 親リクエストを作成
+    new_request = RequestModel(
+        type="settlement",
+        applicant_id=current_user["id"],
+        status="draft",
+        title=f"仮払金精算 - 申請ID: {request.advance_payment_request_id}",
+        description=f"精算期日: {request.settlement_date}, 使用金額: ¥{request.total_amount:,}, 残額: ¥{request.balance_amount:,}"
+    )
+    db.add(new_request)
+    db.flush()
+
+    # 精算申請詳細を作成
+    settlement_request = SettlementRequestModel(
+        request_id=new_request.id,
+        expense_type=request.expense_type,
+        advance_payment_request_id=int(request.advance_payment_request_id),
+        settlement_date=request.settlement_date,
+        total_amount=request.total_amount,
+        balance_amount=request.balance_amount,
+        applicant_name=advance_request.applicant_name,
+        site_name=advance_request.site_name,
+        application_date=advance_request.application_date,
+        advance_payment_amount=advance_request.request_amount
+    )
+    db.add(settlement_request)
+
+    # 明細を作成
+    for line in request.expense_lines:
+        expense_line = ExpenseLineModel(
+            settlement_request_id=settlement_request.id,
+            date=line.date,
+            item=line.item,
+            site_name=line.site_name,
+            tax_type=line.tax_type,
+            amount=line.amount
+        )
+        db.add(expense_line)
+
+    db.commit()
+    db.refresh(new_request)
+
+    return Request(
+        id=str(new_request.id),
+        type=new_request.type,
+        applicant_id=str(new_request.applicant_id),
+        status=new_request.status,
+        title=new_request.title,
+        description=new_request.description,
+        applied_at=new_request.applied_at,
+        created_at=new_request.created_at
+    )
+
+@router.post("/reimbursement", response_model=Request)
+async def create_reimbursement_request(
+    request: ReimbursementRequest,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    立替金申請を作成
+    """
+    # 親リクエストを作成
+    new_request = RequestModel(
+        type="reimbursement",
+        applicant_id=current_user["id"],
+        status="draft",
+        title=f"立替金申請 - {request.site_name}",
+        description=f"申請者: {request.applicant_name}, 現場: {request.site_name}, 合計: ¥{request.total_amount:,}"
+    )
+    db.add(new_request)
+    db.flush()
+
+    # 立替金申請詳細を作成
+    reimbursement_request = ReimbursementRequestModel(
+        request_id=new_request.id,
+        applicant_name=request.applicant_name,
+        site_name=request.site_name,
+        application_date=request.application_date,
+        total_amount=request.total_amount
+    )
+    db.add(reimbursement_request)
+
+    # 明細を作成
+    for line in request.expense_lines:
+        expense_line = ExpenseLineModel(
+            reimbursement_request_id=reimbursement_request.id,
+            date=line.date,
+            item=line.item,
+            site_name=line.site_name,
+            tax_type=line.tax_type,
+            amount=line.amount
+        )
+        db.add(expense_line)
+
+    db.commit()
+    db.refresh(new_request)
+
+    return Request(
+        id=str(new_request.id),
+        type=new_request.type,
+        applicant_id=str(new_request.applicant_id),
+        status=new_request.status,
+        title=new_request.title,
+        description=new_request.description,
+        applied_at=new_request.applied_at,
+        created_at=new_request.created_at
+    )
+
+@router.post("/holiday-work", response_model=Request)
+async def create_holiday_work_request(
+    request: HolidayWorkRequest,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    休日出勤申請を作成
+    """
+    # 親リクエストを作成
+    new_request = RequestModel(
+        type="holiday_work",
+        applicant_id=current_user["id"],
+        status="draft",
+        title="休日出勤申請",
+        description=request.reason
+    )
+    db.add(new_request)
+    db.flush()
+
+    # 休日出勤申請詳細を作成
+    holiday_work_request = HolidayWorkRequestModel(
+        request_id=new_request.id,
+        work_date=request.work_date,
+        start_time=request.start_time,
+        end_time=request.end_time,
+        break_time=request.break_time,
+        work_content=request.work_content,
+        reason=request.reason,
+        compensatory_leave_date=request.compensatory_leave_date
+    )
+    db.add(holiday_work_request)
+    db.commit()
+    db.refresh(new_request)
+
+    return Request(
+        id=str(new_request.id),
+        type=new_request.type,
+        applicant_id=str(new_request.applicant_id),
+        status=new_request.status,
+        title=new_request.title,
+        description=new_request.description,
+        applied_at=new_request.applied_at,
+        created_at=new_request.created_at
     )
 
 @router.post("/{request_id}/submit")
-async def submit_request(request_id: str):
+async def submit_request(
+    request_id: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
     """
     申請を提出
     """
+    request = db.query(RequestModel).filter(RequestModel.id == int(request_id)).first()
+
+    if not request:
+        raise HTTPException(status_code=404, detail="申請が見つかりません")
+
+    # 自分の申請のみ提出可能
+    if request.applicant_id != current_user["id"]:
+        raise HTTPException(status_code=403, detail="この申請を提出する権限がありません")
+
+    # ステータスを更新
+    request.status = "applied"
+    request.applied_at = datetime.utcnow()
+    db.commit()
+
     return {"message": f"申請 {request_id} を提出しました"}
 
 @router.post("/{request_id}/approve")
-async def approve_request(request_id: str):
+async def approve_request(
+    request_id: str,
+    body: Optional[ApproveRequestBody] = None,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_admin_user)
+):
     """
     申請を承認
+    仮払金申請の場合は受領日も記録
     """
-    return {"message": f"申請 {request_id} を承認しました"}
+    request = db.query(RequestModel).filter(RequestModel.id == int(request_id)).first()
+
+    if not request:
+        raise HTTPException(status_code=404, detail="申請が見つかりません")
+
+    # ステータスを更新
+    request.status = "approved"
+    request.approved_at = datetime.utcnow()
+    request.approver_id = current_user["id"]
+    if body and body.comment:
+        request.approver_comment = body.comment
+
+    # 仮払金申請の場合は受領日を記録
+    if request.type == "expense" and body and body.received_date:
+        expense = db.query(ExpenseRequestModel).filter(
+            ExpenseRequestModel.request_id == request.id
+        ).first()
+        if expense:
+            expense.received_date = body.received_date
+
+    db.commit()
+
+    response = {"message": f"申請 {request_id} を承認しました"}
+    if body and body.received_date:
+        response["received_date"] = body.received_date.isoformat()
+
+    return response
 
 @router.post("/{request_id}/reject")
-async def reject_request(request_id: str):
+async def reject_request(
+    request_id: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_admin_user)
+):
     """
     申請を却下
     """
+    request = db.query(RequestModel).filter(RequestModel.id == int(request_id)).first()
+
+    if not request:
+        raise HTTPException(status_code=404, detail="申請が見つかりません")
+
+    # ステータスを更新
+    request.status = "rejected"
+    request.rejected_at = datetime.utcnow()
+    request.approver_id = current_user["id"]
+    db.commit()
+
     return {"message": f"申請 {request_id} を却下しました"}
+
+
 
 
 

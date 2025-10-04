@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react'
 import { apiClient } from '@/lib/api'
 import Link from 'next/link'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function DashboardPage() {
+  const { user: authUser, isAdmin } = useAuth()
   const [user, setUser] = useState<any>(null)
   const [requests, setRequests] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -18,7 +20,16 @@ export default function DashboardPage() {
           apiClient.getRequests()
         ])
         setUser(userData)
-        setRequests(requestsData)
+
+        // 一般ユーザーの場合は自分の申請のみフィルタリング
+        if (authUser && authUser.role === 'user') {
+          const filteredRequests = requestsData.filter(
+            (req: any) => req.applicant_id === authUser.id || req.applicant_id === authUser.user_id
+          )
+          setRequests(filteredRequests)
+        } else {
+          setRequests(requestsData)
+        }
       } catch (error) {
         console.error('データの取得に失敗しました:', error)
       } finally {
@@ -27,7 +38,7 @@ export default function DashboardPage() {
     }
 
     fetchData()
-  }, [])
+  }, [authUser])
 
   const handleExport = async (format: 'pdf' | 'csv' | 'excel') => {
     setExporting(format)
@@ -77,12 +88,16 @@ export default function DashboardPage() {
               </p>
             </div>
             <div className="flex space-x-4">
-              <Link href="/approvals" className="btn btn-secondary">
-                承認管理
-              </Link>
-              <Link href="/admin" className="btn btn-secondary">
-                管理画面
-              </Link>
+              {isAdmin && (
+                <>
+                  <Link href="/approvals" className="btn btn-secondary">
+                    承認管理
+                  </Link>
+                  <Link href="/admin" className="btn btn-secondary">
+                    管理画面
+                  </Link>
+                </>
+              )}
               <button className="btn btn-secondary">
                 ログアウト
               </button>
@@ -116,14 +131,21 @@ export default function DashboardPage() {
                 <p className="card-description">土曜日・日曜日・祝祭日の出勤申請</p>
               </div>
             </Link>
-            
+
             <Link href="/requests/expense" className="card hover:shadow-lg transition-shadow">
               <div className="card-content">
-                <h3 className="card-title text-lg">仮払・立替申請</h3>
-                <p className="card-description">仮払金・立替金の申請</p>
+                <h3 className="card-title text-lg">仮払金申請</h3>
+                <p className="card-description">仮払金の申請</p>
               </div>
             </Link>
-            
+
+            <Link href="/requests/reimbursement" className="card hover:shadow-lg transition-shadow">
+              <div className="card-content">
+                <h3 className="card-title text-lg">立替金申請</h3>
+                <p className="card-description">立替金の精算申請</p>
+              </div>
+            </Link>
+
             <Link href="/requests/construction-daily" className="card hover:shadow-lg transition-shadow">
               <div className="card-content">
                 <h3 className="card-title text-lg">工事日報</h3>
@@ -187,7 +209,9 @@ export default function DashboardPage() {
                               {request.type === 'leave' && '休暇'}
                               {request.type === 'overtime' && '時間外'}
                               {request.type === 'holiday_work' && '休日出勤'}
-                              {request.type === 'expense' && '仮払・立替'}
+                              {request.type === 'expense' && '仮払金'}
+                              {request.type === 'reimbursement' && '立替金'}
+                              {request.type === 'settlement' && '仮払金精算'}
                               {request.type === 'construction_daily' && '工事日報'}
                             </span>
                           </td>

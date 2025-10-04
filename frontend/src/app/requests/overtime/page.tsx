@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiClient } from '@/lib/api'
 import Link from 'next/link'
+import { generateOvertimeRequestPDFFromHTML } from '@/lib/pdf-generator-html'
 
 export default function OvertimeRequestPage() {
   const router = useRouter()
@@ -48,6 +49,15 @@ export default function OvertimeRequestPage() {
       ...prev,
       [name]: name === 'break_time' || name === 'total_hours' ? parseFloat(value) || 0 : value
     }))
+  }
+
+  const handleDownloadPDF = async () => {
+    try {
+      await generateOvertimeRequestPDFFromHTML(formData)
+    } catch (error) {
+      console.error('PDF生成エラー:', error)
+      alert('PDFの生成に失敗しました')
+    }
   }
 
   // 時間計算
@@ -153,23 +163,6 @@ export default function OvertimeRequestPage() {
                     className="input"
                     required
                   />
-                </div>
-
-                {/* 時間外労働種別 */}
-                <div>
-                  <label htmlFor="overtime_type" className="label">時間外労働種別</label>
-                  <select
-                    id="overtime_type"
-                    name="overtime_type"
-                    value={formData.overtime_type}
-                    onChange={handleChange}
-                    className="input"
-                    required
-                  >
-                    <option value="early">早出</option>
-                    <option value="overtime">残業</option>
-                    <option value="holiday">休日出勤</option>
-                  </select>
                 </div>
 
                 {/* 勤務時間 */}
@@ -337,6 +330,16 @@ export default function OvertimeRequestPage() {
 
                 {/* ボタン */}
                 <div className="flex justify-end space-x-4">
+                  <button
+                    type="button"
+                    onClick={handleDownloadPDF}
+                    className="btn btn-outline"
+                  >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    PDFダウンロード
+                  </button>
                   <Link href="/dashboard" className="btn btn-secondary">
                     キャンセル
                   </Link>

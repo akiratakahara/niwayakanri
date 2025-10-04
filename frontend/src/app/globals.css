@@ -13,68 +13,210 @@
 }
 
 @layer components {
+  /* ボタンコンポーネント */
   .btn {
-    @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-white;
+    @apply inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-white shadow-sm;
   }
   
   .btn-primary {
-    @apply bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800;
+    @apply bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800 hover:shadow-md;
   }
   
   .btn-secondary {
-    @apply bg-secondary-100 text-secondary-900 hover:bg-secondary-200 active:bg-secondary-300;
+    @apply bg-white text-secondary-700 border border-secondary-300 hover:bg-secondary-50 active:bg-secondary-100 hover:shadow-md;
   }
   
   .btn-success {
-    @apply bg-success-600 text-white hover:bg-success-700 active:bg-success-800;
+    @apply bg-success-600 text-white hover:bg-success-700 active:bg-success-800 hover:shadow-md;
   }
   
   .btn-warning {
-    @apply bg-warning-600 text-white hover:bg-warning-700 active:bg-warning-800;
+    @apply bg-warning-600 text-white hover:bg-warning-700 active:bg-warning-800 hover:shadow-md;
   }
   
   .btn-error {
-    @apply bg-error-600 text-white hover:bg-error-700 active:bg-error-800;
+    @apply bg-error-600 text-white hover:bg-error-700 active:bg-error-800 hover:shadow-md;
+  }
+  
+  .btn-outline {
+    @apply border border-primary-600 text-primary-600 hover:bg-primary-50 active:bg-primary-100;
+  }
+  
+  .btn-ghost {
+    @apply text-secondary-600 hover:bg-secondary-100 active:bg-secondary-200;
   }
   
   .btn-sm {
-    @apply h-8 px-3 text-xs;
+    @apply h-8 px-3 text-xs rounded-md;
   }
   
   .btn-md {
-    @apply h-10 px-4 py-2;
+    @apply h-10 px-4 py-2 text-sm;
   }
   
   .btn-lg {
-    @apply h-12 px-8 text-base;
+    @apply h-12 px-6 text-base rounded-xl;
   }
   
+  /* 入力フィールドコンポーネント */
   .input {
-    @apply flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply flex h-10 w-full rounded-lg border border-secondary-300 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-secondary-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors duration-200;
   }
   
+  .input-error {
+    @apply border-error-300 focus-visible:ring-error-500;
+  }
+  
+  .input-success {
+    @apply border-success-300 focus-visible:ring-success-500;
+  }
+  
+  .textarea {
+    @apply flex min-h-[80px] w-full rounded-lg border border-secondary-300 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-secondary-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors duration-200;
+  }
+  
+  .select {
+    @apply flex h-10 w-full items-center justify-between rounded-lg border border-secondary-300 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-secondary-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors duration-200;
+  }
+  
+  /* ラベルコンポーネント */
   .label {
-    @apply text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70;
+    @apply text-sm font-medium text-secondary-700 leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-1 block;
   }
   
+  .label-required {
+    @apply after:content-['*'] after:text-error-500 after:ml-1;
+  }
+  
+  .label-optional {
+    @apply after:content-['（任意）'] after:text-secondary-400 after:ml-1 after:text-xs;
+  }
+  
+  /* カードコンポーネント */
   .card {
-    @apply rounded-lg border bg-white shadow-sm;
+    @apply rounded-xl border border-secondary-200 bg-white shadow-soft hover:shadow-medium transition-shadow duration-200;
   }
   
   .card-header {
-    @apply flex flex-col space-y-1.5 p-6;
-  }
-  
-  .card-title {
-    @apply text-2xl font-semibold leading-none tracking-tight;
-  }
-  
-  .card-description {
-    @apply text-sm text-gray-500;
+    @apply flex flex-col space-y-1.5 p-6 border-b border-secondary-100;
   }
   
   .card-content {
-    @apply p-6 pt-0;
+    @apply p-6;
+  }
+  
+  .card-footer {
+    @apply flex items-center p-6 pt-0;
+  }
+  
+  .card-title {
+    @apply text-xl font-semibold leading-none tracking-tight text-secondary-900;
+  }
+  
+  .card-description {
+    @apply text-sm text-secondary-600;
+  }
+  
+  /* アラートコンポーネント */
+  .alert {
+    @apply rounded-lg border p-4;
+  }
+  
+  .alert-success {
+    @apply border-success-200 bg-success-50 text-success-800;
+  }
+  
+  .alert-warning {
+    @apply border-warning-200 bg-warning-50 text-warning-800;
+  }
+  
+  .alert-error {
+    @apply border-error-200 bg-error-50 text-error-800;
+  }
+  
+  .alert-info {
+    @apply border-primary-200 bg-primary-50 text-primary-800;
+  }
+  
+  /* バッジコンポーネント */
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+  
+  .badge-primary {
+    @apply bg-primary-100 text-primary-800;
+  }
+  
+  .badge-success {
+    @apply bg-success-100 text-success-800;
+  }
+  
+  .badge-warning {
+    @apply bg-warning-100 text-warning-800;
+  }
+  
+  .badge-error {
+    @apply bg-error-100 text-error-800;
+  }
+  
+  .badge-secondary {
+    @apply bg-secondary-100 text-secondary-800;
+  }
+  
+  /* ローディングコンポーネント */
+  .spinner {
+    @apply animate-spin rounded-full border-2 border-secondary-200 border-t-primary-600;
+  }
+  
+  .skeleton {
+    @apply animate-pulse bg-secondary-200 rounded;
+  }
+  
+  /* ナビゲーションコンポーネント */
+  .nav-link {
+    @apply flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200;
+  }
+  
+  .nav-link-active {
+    @apply bg-primary-100 text-primary-700;
+  }
+  
+  .nav-link-inactive {
+    @apply text-secondary-600 hover:bg-secondary-100 hover:text-secondary-900;
+  }
+  
+  /* フォームセクション */
+  .form-section {
+    @apply space-y-6 p-6 bg-white rounded-xl border border-secondary-200 shadow-soft;
+  }
+  
+  .form-section-title {
+    @apply text-lg font-semibold text-secondary-900 border-b border-secondary-200 pb-2;
+  }
+  
+  .form-row {
+    @apply grid grid-cols-1 md:grid-cols-2 gap-4;
+  }
+  
+  .form-row-3 {
+    @apply grid grid-cols-1 md:grid-cols-3 gap-4;
+  }
+  
+  /* レスポンシブユーティリティ */
+  .container-responsive {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .grid-responsive {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4;
+  }
+  
+  .text-responsive {
+    @apply text-sm sm:text-base;
+  }
+  
+  .heading-responsive {
+    @apply text-xl sm:text-2xl lg:text-3xl font-bold;
   }
   
   .card-footer {
@@ -135,6 +277,8 @@
     text-wrap: balance;
   }
 }
+
+
 
 
 

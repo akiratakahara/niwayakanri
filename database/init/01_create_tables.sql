@@ -229,3 +229,5 @@ CREATE TRIGGER update_daily_reports_updated_at BEFORE UPDATE ON daily_reports FO
 
 
 
+
+

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiClient } from '@/lib/api'
 import Link from 'next/link'
+import { generateHolidayWorkRequestPDFFromHTML } from '@/lib/pdf-generator-html'
 
 export default function HolidayWorkRequestPage() {
   const router = useRouter()
@@ -16,7 +17,7 @@ export default function HolidayWorkRequestPage() {
     work_date: '',
     holiday_type: 'sunday',
     work_duration: 'full',
-    work_reason: '',
+    work_reasons: [] as string[],
     work_reason_detail: '',
     compensatory_leave: 'no',
     compensatory_leave_date: '',
@@ -48,6 +49,28 @@ export default function HolidayWorkRequestPage() {
       ...prev,
       [name]: value
     }))
+  }
+
+  const handleReasonCheckbox = (reason: string) => {
+    setFormData(prev => {
+      const isChecked = prev.work_reasons.includes(reason)
+      const newReasons = isChecked
+        ? prev.work_reasons.filter(r => r !== reason)
+        : [...prev.work_reasons, reason]
+      return {
+        ...prev,
+        work_reasons: newReasons
+      }
+    })
+  }
+
+  const handleDownloadPDF = async () => {
+    try {
+      await generateHolidayWorkRequestPDFFromHTML(formData)
+    } catch (error) {
+      console.error('PDF生成エラー:', error)
+      alert('PDFの生成に失敗しました')
+    }
   }
 
   return (
@@ -168,37 +191,31 @@ export default function HolidayWorkRequestPage() {
 
                 {/* 出勤の事由 */}
                 <div>
-                  <label htmlFor="work_reason" className="label">出勤の事由</label>
+                  <label className="label">出勤の事由（複数選択可）</label>
                   <div className="space-y-2">
                     <label className="flex items-center">
                       <input
-                        type="radio"
-                        name="work_reason"
-                        value="company_instruction"
-                        checked={formData.work_reason === 'company_instruction'}
-                        onChange={handleChange}
+                        type="checkbox"
+                        checked={formData.work_reasons.includes('company_instruction')}
+                        onChange={() => handleReasonCheckbox('company_instruction')}
                         className="mr-2"
                       />
                       ① 会社からの指示による
                     </label>
                     <label className="flex items-center">
                       <input
-                        type="radio"
-                        name="work_reason"
-                        value="site_necessity"
-                        checked={formData.work_reason === 'site_necessity'}
-                        onChange={handleChange}
+                        type="checkbox"
+                        checked={formData.work_reasons.includes('site_necessity')}
+                        onChange={() => handleReasonCheckbox('site_necessity')}
                         className="mr-2"
                       />
                       ② 現場事情により作業等が必要な為
                     </label>
                     <label className="flex items-center">
                       <input
-                        type="radio"
-                        name="work_reason"
-                        value="compensatory_work"
-                        checked={formData.work_reason === 'compensatory_work'}
-                        onChange={handleChange}
+                        type="checkbox"
+                        checked={formData.work_reasons.includes('compensatory_work')}
+                        onChange={() => handleReasonCheckbox('compensatory_work')}
                         className="mr-2"
                       />
                       ③ その他（取得代休の振替出勤等）
@@ -392,6 +409,16 @@ export default function HolidayWorkRequestPage() {
 
                 {/* ボタン */}
                 <div className="flex justify-end space-x-4">
+                  <button
+                    type="button"
+                    onClick={handleDownloadPDF}
+                    className="btn btn-outline"
+                  >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    PDFダウンロード
+                  </button>
                   <Link href="/dashboard" className="btn btn-secondary">
                     キャンセル
                   </Link>

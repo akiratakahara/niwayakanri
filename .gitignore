@@ -162,3 +162,10 @@ ffmpeg*/
 **/SuumoReportTool*
 **/zumen*
 
+
+# Temporary password reset scripts
+update_password.py
+update_backend_password.py
+reset_admin.py
+init_admin.py
+backend/niwayakanri.db

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiClient } from '@/lib/api'
 import Link from 'next/link'
+import { RequireAdmin } from '@/components/auth/RequireAdmin'
 
 interface AdminStats {
   total_requests: number
@@ -31,7 +32,7 @@ interface NotificationSettings {
   skip_holidays: boolean
 }
 
-export default function AdminPage() {
+function AdminContent() {
   const router = useRouter()
   const [stats, setStats] = useState<AdminStats | null>(null)
   const [users, setUsers] = useState<User[]>([])
@@ -400,9 +401,9 @@ export default function AdminPage() {
               <div className="card">
                 <div className="card-header">
                   <h2 className="card-title">ユーザー一覧</h2>
-                  <button className="btn btn-primary btn-sm">
+                  <Link href="/admin/users/register" className="btn btn-primary btn-sm">
                     新規ユーザー追加
-                  </button>
+                  </Link>
                 </div>
                 <div className="card-content">
                   <div className="overflow-x-auto">
@@ -776,5 +777,11 @@ export default function AdminPage() {
   )
 }
 
-
+export default function AdminPage() {
+  return (
+    <RequireAdmin>
+      <AdminContent />
+    </RequireAdmin>
+  )
+}
 

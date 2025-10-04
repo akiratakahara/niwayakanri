@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiClient } from '@/lib/api'
 import Link from 'next/link'
+import { RequireAdmin } from '@/components/auth/RequireAdmin'
 
 interface ApprovalRequest {
   id: string
@@ -18,13 +19,16 @@ interface ApprovalRequest {
   priority: 'high' | 'medium' | 'low'
 }
 
-export default function ApprovalsPage() {
+function ApprovalsContent() {
   const router = useRouter()
   const [requests, setRequests] = useState<ApprovalRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [filter, setFilter] = useState('all')
   const [sortBy, setSortBy] = useState('applied_at')
+  const [showReceivedDateModal, setShowReceivedDateModal] = useState(false)
+  const [selectedRequestId, setSelectedRequestId] = useState<string>('')
+  const [receivedDate, setReceivedDate] = useState<string>(new Date().toISOString().split('T')[0])
 
   useEffect(() => {
     fetchApprovals()
@@ -42,9 +46,30 @@ export default function ApprovalsPage() {
     }
   }
 
-  const handleApprove = async (requestId: string) => {
+  const handleApprove = async (requestId: string, requestType: string) => {
+    // 仮払金申請の場合のみ受領日モーダルを表示（精算・立替金は不要）
+    if (requestType === 'expense') {
+      setSelectedRequestId(requestId)
+      setShowReceivedDateModal(true)
+      return
+    }
+
+    // その他の申請（立替金、精算、休暇、残業など）は通常の承認処理
     try {
       await apiClient.approveRequest(requestId, '承認しました')
+      await fetchApprovals()
+    } catch (err) {
+      setError('承認に失敗しました。')
+      console.error('Approve error:', err)
+    }
+  }
+
+  const handleApproveWithReceivedDate = async () => {
+    try {
+      await apiClient.approveRequest(selectedRequestId, '承認しました', receivedDate)
+      setShowReceivedDateModal(false)
+      setSelectedRequestId('')
+      setReceivedDate(new Date().toISOString().split('T')[0])
       await fetchApprovals()
     } catch (err) {
       setError('承認に失敗しました。')
@@ -96,7 +121,9 @@ export default function ApprovalsPage() {
     switch (type) {
       case 'leave': return '休暇申請'
       case 'overtime': return '時間外労働申請'
-      case 'expense': return '仮払・立替申請'
+      case 'expense': return '仮払金申請'
+      case 'reimbursement': return '立替金申請'
+      case 'settlement': return '仮払金精算'
       default: return type
     }
   }
@@ -272,7 +299,7 @@ export default function ApprovalsPage() {
                               却下
                             </button>
                             <button
-                              onClick={() => handleApprove(request.id)}
+                              onClick={() => handleApprove(request.id, request.type)}
                               className="btn btn-sm btn-primary"
                             >
                               承認
@@ -288,9 +315,56 @@ export default function ApprovalsPage() {
           </div>
         </div>
       </main>
+
+      {/* 受領日入力モーダル */}
+      {showReceivedDateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">仮払金の受領日を入力</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              承認と同時に受領日を記録します。
+            </p>
+            <div className="mb-6">
+              <label htmlFor="received_date" className="label">受領日</label>
+              <input
+                type="date"
+                id="received_date"
+                value={receivedDate}
+                onChange={(e) => setReceivedDate(e.target.value)}
+                className="input"
+                required
+              />
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowReceivedDateModal(false)
+                  setSelectedRequestId('')
+                  setReceivedDate(new Date().toISOString().split('T')[0])
+                }}
+                className="btn btn-secondary"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleApproveWithReceivedDate}
+                className="btn btn-primary"
+              >
+                承認する
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
-
+export default function ApprovalsPage() {
+  return (
+    <RequireAdmin>
+      <ApprovalsContent />
+    </RequireAdmin>
+  )
+}
 

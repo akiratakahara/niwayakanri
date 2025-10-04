@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, requests, users
+from app.api.v1.endpoints import auth, requests, users, approvals, admin
 
 api_router = APIRouter()
 
@@ -11,6 +11,14 @@ api_router.include_router(users.router, prefix="/users", tags=["ユーザー"])
 
 # 申請関連のエンドポイント
 api_router.include_router(requests.router, prefix="/requests", tags=["申請"])
+
+# 承認関連のエンドポイント
+api_router.include_router(approvals.router, prefix="/approvals", tags=["承認"])
+
+# 管理関連のエンドポイント
+api_router.include_router(admin.router, prefix="/admin", tags=["管理"])
+
+
 
 
 

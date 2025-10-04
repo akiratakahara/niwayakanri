@@ -1,12 +1,16 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from app.core.config import settings
+import os
+
+# SQLite データベース設定
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./niwayakanri.db")
 
 # SQLite データベースエンジンを作成
 engine = create_engine(
-    settings.DATABASE_URL,
-    connect_args={"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {}
+    DATABASE_URL,
+    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {},
+    echo=True  # SQL文をログ出力（開発時のみ）
 )
 
 # セッションファクトリーを作成
@@ -22,6 +26,14 @@ def get_db():
         yield db
     finally:
         db.close()
+
+# データベース初期化
+def init_db():
+    """データベーステーブル作成"""
+    from app.models.database import Base as ModelsBase
+    ModelsBase.metadata.create_all(bind=engine)
+
+
 
 
 

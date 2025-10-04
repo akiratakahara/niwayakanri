@@ -91,8 +91,13 @@ export default function LoginPage() {
         }
       }
 
+      // localStorageへの書き込みが完了するまで少し待機
+      await new Promise(resolve => setTimeout(resolve, 100))
+
       // ログイン成功時にダッシュボードへリダイレクト
-      router.push('/dashboard')
+      if (typeof window !== 'undefined') {
+        window.location.href = '/dashboard'
+      }
     } catch (err: any) {
       const errorMessage = err.message?.includes('401')
         ? 'メールアドレスまたはパスワードが正しくありません。'
@@ -331,8 +336,8 @@ export default function LoginPage() {
               <div className="rounded-lg bg-blue-50 p-4">
                 <p className="text-sm font-medium text-blue-900 mb-1">テスト用アカウント</p>
                 <div className="text-xs text-blue-700 space-y-1">
-                  <p>メール: <span className="font-mono bg-white px-2 py-0.5 rounded">admin@company.com</span></p>
-                  <p>パスワード: <span className="font-mono bg-white px-2 py-0.5 rounded">admin123!</span></p>
+                  <p>メール: <span className="font-mono bg-white px-2 py-0.5 rounded">admin@example.com</span></p>
+                  <p>パスワード: <span className="font-mono bg-white px-2 py-0.5 rounded">password</span></p>
                 </div>
               </div>
               

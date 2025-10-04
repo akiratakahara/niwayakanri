@@ -15,6 +15,8 @@ export class ApiClient {
 
     // 認証トークンを追加
     const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null
+    console.log('[API Request]', endpoint, 'Token:', token ? `${token.substring(0, 20)}...` : 'null')
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...options.headers as Record<string, string>,
@@ -22,6 +24,9 @@ export class ApiClient {
 
     if (token) {
       headers['Authorization'] = `Bearer ${token}`
+      console.log('[API Request] Authorization header added')
+    } else {
+      console.log('[API Request] No token available')
     }
 
     try {
@@ -73,20 +78,38 @@ export class ApiClient {
 
   // 認証関連
   async login(email: string, password: string) {
-    const response = await this.request('/api/v1/auth/login', {
+    // ログインリクエストを送信（トークンなしで送る）
+    const url = `${this.baseUrl}/api/v1/auth/login`
+    const response = await fetch(url, {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({ email, password }),
     })
 
-    // トークンをローカルストレージに保存
-    if (response.access_token) {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('access_token', response.access_token)
-        localStorage.setItem('user', JSON.stringify(response.user))
-      }
+    if (!response.ok) {
+      throw new Error(`Login failed: ${response.status}`)
     }
 
-    return response
+    const data = await response.json()
+    console.log('Login response:', data)
+
+    // トークンをローカルストレージに保存
+    if (data.access_token) {
+      console.log('Saving token to localStorage:', data.access_token.substring(0, 20) + '...')
+      localStorage.setItem('access_token', data.access_token)
+      localStorage.setItem('user', JSON.stringify(data.user))
+
+      // 保存確認
+      const savedToken = localStorage.getItem('access_token')
+      console.log('Token saved successfully:', savedToken ? 'YES' : 'NO')
+      console.log('Saved token starts with:', savedToken ? savedToken.substring(0, 20) + '...' : 'null')
+    } else {
+      console.error('No access_token in response!')
+    }
+
+    return data
   }
 
   async logout() {
@@ -205,10 +228,10 @@ export class ApiClient {
     })
   }
 
-  async approveRequest(requestId: string, comment?: string) {
+  async approveRequest(requestId: string, comment?: string, receivedDate?: string) {
     return this.request(`/api/v1/requests/${requestId}/approve`, {
       method: 'POST',
-      body: JSON.stringify({ comment }),
+      body: JSON.stringify({ comment, received_date: receivedDate }),
     })
   }
 
@@ -256,6 +279,14 @@ export class ApiClient {
   // 工事日報
   async createConstructionDailyReport(data: any) {
     return this.request('/api/v1/requests/construction-daily', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  // 立替金申請
+  async createReimbursementRequest(data: any) {
+    return this.request('/api/v1/requests/reimbursement', {
       method: 'POST',
       body: JSON.stringify(data),
     })

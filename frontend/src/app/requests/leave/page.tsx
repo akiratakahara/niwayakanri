@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiClient } from '@/lib/api'
 import Link from 'next/link'
+import { generateLeaveRequestPDFFromHTML } from '@/lib/pdf-generator-html'
 
 export default function LeaveRequestPage() {
   const router = useRouter()
@@ -51,17 +52,29 @@ export default function LeaveRequestPage() {
     }))
   }
 
+  const handleDownloadPDF = async () => {
+    try {
+      await generateLeaveRequestPDFFromHTML(formData)
+    } catch (error) {
+      console.error('PDF生成エラー:', error)
+      alert('PDFの生成に失敗しました')
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-secondary-50 to-primary-50">
       {/* ヘッダー */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">休暇申請</h1>
-              <p className="text-gray-600">有給・代休・特別休暇の申請</p>
+      <header className="bg-white/80 backdrop-blur-sm shadow-soft border-b border-secondary-200">
+        <div className="container-responsive">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-6 space-y-4 sm:space-y-0">
+            <div className="space-y-2">
+              <h1 className="heading-responsive text-secondary-900">休暇申請</h1>
+              <p className="text-secondary-600 text-lg">有給・代休・特別休暇の申請</p>
             </div>
-            <Link href="/dashboard" className="btn btn-secondary">
+            <Link href="/dashboard" className="btn btn-outline btn-md">
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
               ダッシュボードに戻る
             </Link>
           </div>
@@ -69,8 +82,8 @@ export default function LeaveRequestPage() {
       </header>
 
       {/* メインコンテンツ */}
-      <main className="max-w-3xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
+      <main className="container-responsive py-8">
+        <div className="max-w-4xl mx-auto">
           <div className="card">
             <div className="card-header">
               <h2 className="card-title">申請内容</h2>
@@ -78,83 +91,35 @@ export default function LeaveRequestPage() {
             </div>
             <div className="card-content">
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* 申請日・申請者 */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="application_date" className="label">申請日</label>
-                    <input
-                      type="date"
-                      id="application_date"
-                      name="application_date"
-                      value={formData.application_date}
-                      onChange={handleChange}
-                      className="input"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="applicant_name" className="label">申請者氏名</label>
-                    <input
-                      type="text"
-                      id="applicant_name"
-                      name="applicant_name"
-                      value={formData.applicant_name}
-                      onChange={handleChange}
-                      className="input"
-                      placeholder="佐藤一郎"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* 休暇の種類 */}
-                <div>
-                  <label className="label">(2) 休暇の種類（いずれか○で囲む）</label>
-                  <div className="flex flex-wrap gap-4">
-                    <label className="flex items-center">
+                {/* 基本情報 */}
+                <div className="form-section">
+                  <h3 className="form-section-title">基本情報</h3>
+                  <div className="form-row">
+                    <div>
+                      <label htmlFor="application_date" className="label label-required">申請日</label>
                       <input
-                        type="radio"
-                        name="leave_type"
-                        value="paid"
-                        checked={formData.leave_type === 'paid'}
+                        type="date"
+                        id="application_date"
+                        name="application_date"
+                        value={formData.application_date}
                         onChange={handleChange}
-                        className="mr-2"
+                        className="input"
+                        required
                       />
-                      有給休暇
-                    </label>
-                    <label className="flex items-center">
+                    </div>
+                    <div>
+                      <label htmlFor="applicant_name" className="label label-required">申請者氏名</label>
                       <input
-                        type="radio"
-                        name="leave_type"
-                        value="compensatory"
-                        checked={formData.leave_type === 'compensatory'}
+                        type="text"
+                        id="applicant_name"
+                        name="applicant_name"
+                        value={formData.applicant_name}
                         onChange={handleChange}
-                        className="mr-2"
+                        className="input"
+                        placeholder="佐藤一郎"
+                        required
                       />
-                      代休
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        name="leave_type"
-                        value="compensatory_advance"
-                        checked={formData.leave_type === 'compensatory_advance'}
-                        onChange={handleChange}
-                        className="mr-2"
-                      />
-                      代休先行取得
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        name="leave_type"
-                        value="sick"
-                        checked={formData.leave_type === 'sick'}
-                        onChange={handleChange}
-                        className="mr-2"
-                      />
-                      欠勤
-                    </label>
+                    </div>
                   </div>
                 </div>
 
@@ -257,7 +222,7 @@ export default function LeaveRequestPage() {
                       step="0.5"
                       required
                     />
-                    <p className="text-sm text-gray-500 mt-1">0.5日 = 4時間、1日 = 8時間</p>
+                    <p className="text-sm text-gray-500 mt-1">0.5＝半日、１＝１日</p>
                   </div>
                   <div>
                     <label htmlFor="hours" className="label">時間（オプション）</label>
@@ -272,13 +237,64 @@ export default function LeaveRequestPage() {
                       max="8"
                       step="0.5"
                     />
-                    <p className="text-sm text-gray-500 mt-1">時間単位での申請（1時間単位）</p>
+                    <p className="text-sm text-gray-500 mt-1">１＝１時間</p>
+                  </div>
+                </div>
+
+                {/* 休暇の種類 */}
+                <div>
+                  <label className="label">(2) 休暇の種類（いずれかを選択してください）</label>
+                  <div className="flex flex-wrap gap-4">
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="leave_type"
+                        value="paid"
+                        checked={formData.leave_type === 'paid'}
+                        onChange={handleChange}
+                        className="mr-2"
+                      />
+                      有給休暇
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="leave_type"
+                        value="compensatory"
+                        checked={formData.leave_type === 'compensatory'}
+                        onChange={handleChange}
+                        className="mr-2"
+                      />
+                      代休
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="leave_type"
+                        value="compensatory_advance"
+                        checked={formData.leave_type === 'compensatory_advance'}
+                        onChange={handleChange}
+                        className="mr-2"
+                      />
+                      代休先行取得
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="leave_type"
+                        value="sick"
+                        checked={formData.leave_type === 'sick'}
+                        onChange={handleChange}
+                        className="mr-2"
+                      />
+                      欠勤
+                    </label>
                   </div>
                 </div>
 
                 {/* 理由 */}
                 <div>
-                  <label htmlFor="reason" className="label">理由</label>
+                  <label htmlFor="reason" className="label">理由（任意）</label>
                   <textarea
                     id="reason"
                     name="reason"
@@ -286,8 +302,7 @@ export default function LeaveRequestPage() {
                     onChange={handleChange}
                     className="input"
                     rows={3}
-                    placeholder="休暇を取得する理由を入力してください"
-                    required
+                    placeholder="休暇を取得する理由を入力してください（任意）"
                   />
                 </div>
 
@@ -350,11 +365,13 @@ export default function LeaveRequestPage() {
                       <h3 className="text-sm font-medium text-blue-800">注意事項</h3>
                       <div className="mt-2 text-sm text-blue-700">
                         <ul className="list-disc list-inside space-y-1">
-                          <li>原則として1週間前までに、遅くとも前々日までに届け出ること</li>
-                          <li>但し、届出が後日となっても取得日を含めた取得日以前の届出日とすること</li>
-                          <li>欠勤を有給休暇及び代休に振り替えることができる</li>
-                          <li>ともに、休日出勤届（様式－３）を同時に提出すること</li>
-                          <li>慶弔時で特別休暇に該当する場合は、本様式によらず様式－２により申請すること</li>
+                          <li>原則として1週間前までに、遅くとも前々日までに届け出ること。</li>
+                          <li>休暇と休日を含め１週間以上勤務から離れる場合は、２週間前までに届け出ること。</li>
+                          <li>休暇希望日が、事業の正常な運営を妨げる場合には、取得日を変更することがある。</li>
+                          <li>突発的な傷病、その他やむを得ない事由により欠勤した場合で、あらかじめ届出ることが困難であったと会社が承認した場合には、事後の速やかな本様式の届出により、当該欠勤を有給休暇及び代休に振り替えることができる。<br />但し、届出が後日となっても取得日を含めた取得日以前の届出日とすること。</li>
+                          <li>代休の先行取得の場合は、上司の了解を得て、振替出勤日を（3）の欄に記入するとともに、休日出勤届（様式－３）を同時に提出すること。</li>
+                          <li>慶弔時で特別休暇に該当する場合は、本様式によらず様式－２により申請すること。</li>
+                          <li>１日または半日取得の場合、いずれかを〇で囲み、自の欄のみに記入する。</li>
                         </ul>
                       </div>
                     </div>
@@ -372,8 +389,7 @@ export default function LeaveRequestPage() {
                     <div className="ml-3">
                       <h3 className="text-sm font-medium text-green-800">提出先</h3>
                       <div className="mt-2 text-sm text-green-700">
-                        <p>NIWAYAホールディングス(株)代表取締役 様</p>
-                        <p>株式会社NIWAYA 代表取締役 様</p>
+                        <p>ＮＩＷＡＹＡホールディングス(株) 千葉幸子 ・鈴木聖子</p>
                       </div>
                     </div>
                   </div>
@@ -388,6 +404,16 @@ export default function LeaveRequestPage() {
 
                 {/* ボタン */}
                 <div className="flex justify-end space-x-4">
+                  <button
+                    type="button"
+                    onClick={handleDownloadPDF}
+                    className="btn btn-outline"
+                  >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    PDFダウンロード
+                  </button>
                   <Link href="/dashboard" className="btn btn-secondary">
                     キャンセル
                   </Link>
