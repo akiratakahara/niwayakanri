@@ -64,7 +64,7 @@ function AdminContent() {
       ])
       setStats(statsResponse)
       setUsers(usersResponse as User[])
-      setSummaryData(summaryResponse.data)
+      setSummaryData((summaryResponse as any).data)
     } catch (err) {
       setError('管理データの取得に失敗しました。')
       console.error('Admin data fetch error:', err)
