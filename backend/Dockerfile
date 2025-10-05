@@ -14,14 +14,7 @@ RUN apt-get update \
         postgresql-client \
         build-essential \
         libpq-dev \
-        libmagic1 \
-        libffi-dev \
-        libcairo2 \
-        libpango-1.0-0 \
-        libpangocairo-1.0-0 \
-        libgdk-pixbuf2.0-0 \
-        libffi-dev \
-        shared-mime-info \
+        curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
