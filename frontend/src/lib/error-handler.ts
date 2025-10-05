@@ -176,15 +176,15 @@ export async function withRetry<T>(
 }
 
 // フォームバリデーションエラー
-export interface ValidationError {
+export interface ValidationErrorDetail {
   field: string
   message: string
 }
 
 export class ValidationError extends AppError {
-  public errors: ValidationError[]
+  public errors: ValidationErrorDetail[]
 
-  constructor(errors: ValidationError[]) {
+  constructor(errors: ValidationErrorDetail[]) {
     const messages = errors.map(e => `${e.field}: ${e.message}`).join(', ')
     super(`入力エラー: ${messages}`, 400, 'VALIDATION_ERROR')
     this.errors = errors
@@ -192,14 +192,14 @@ export class ValidationError extends AppError {
 }
 
 // バリデーションヘルパー
-export function validateRequired(value: any, fieldName: string): ValidationError | null {
+export function validateRequired(value: any, fieldName: string): ValidationErrorDetail | null {
   if (!value || (typeof value === 'string' && value.trim() === '')) {
     return { field: fieldName, message: '必須項目です' }
   }
   return null
 }
 
-export function validateEmail(email: string): ValidationError | null {
+export function validateEmail(email: string): ValidationErrorDetail | null {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (!emailRegex.test(email)) {
     return { field: 'email', message: '有効なメールアドレスを入力してください' }
@@ -207,7 +207,7 @@ export function validateEmail(email: string): ValidationError | null {
   return null
 }
 
-export function validatePassword(password: string): ValidationError | null {
+export function validatePassword(password: string): ValidationErrorDetail | null {
   if (password.length < 6) {
     return { field: 'password', message: 'パスワードは6文字以上で入力してください' }
   }
