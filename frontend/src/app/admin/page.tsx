@@ -63,7 +63,7 @@ function AdminContent() {
         apiClient.getSummaryReport()
       ])
       setStats(statsResponse)
-      setUsers(usersResponse)
+      setUsers(usersResponse as User[])
       setSummaryData(summaryResponse.data)
     } catch (err) {
       setError('管理データの取得に失敗しました。')
