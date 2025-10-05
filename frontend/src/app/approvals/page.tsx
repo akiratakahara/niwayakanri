@@ -37,7 +37,7 @@ function ApprovalsContent() {
   const fetchApprovals = async () => {
     try {
       const response = await apiClient.getApprovalRequests()
-      setRequests(response)
+      setRequests(response as ApprovalRequest[])
     } catch (err) {
       setError('承認待ち申請の取得に失敗しました。')
       console.error('Approvals fetch error:', err)

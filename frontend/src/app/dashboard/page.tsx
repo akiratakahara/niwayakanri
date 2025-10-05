@@ -19,16 +19,16 @@ export default function DashboardPage() {
           apiClient.getCurrentUser(),
           apiClient.getRequests()
         ])
-        setUser(userData)
+        setUser(userData as any)
 
         // 一般ユーザーの場合は自分の申請のみフィルタリング
         if (authUser && authUser.role === 'user') {
-          const filteredRequests = requestsData.filter(
+          const filteredRequests = (requestsData as any[]).filter(
             (req: any) => req.applicant_id === authUser.id || req.applicant_id === authUser.user_id
           )
           setRequests(filteredRequests)
         } else {
-          setRequests(requestsData)
+          setRequests(requestsData as any[])
         }
       } catch (error) {
         console.error('データの取得に失敗しました:', error)

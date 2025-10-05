@@ -34,7 +34,7 @@ export default function RequestPDFPage() {
   const fetchRequest = async () => {
     try {
       const response = await apiClient.getRequest(params.id as string)
-      setRequest(response)
+      setRequest(response as RequestDetail)
     } catch (err) {
       setError('申請の取得に失敗しました。')
       console.error('Request fetch error:', err)

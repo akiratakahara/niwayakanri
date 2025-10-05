@@ -50,8 +50,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const response = await apiClient.login(email, password)
-    if (response.user) {
-      setUser(response.user)
+    if ((response as any).user) {
+      setUser((response as any).user as User)
     }
   }
 
@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshUser = async () => {
     try {
       const userData = await apiClient.getCurrentUser()
-      setUser(userData)
+      setUser(userData as User)
       if (typeof window !== 'undefined') {
         localStorage.setItem('user', JSON.stringify(userData))
       }
