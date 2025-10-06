@@ -11,8 +11,8 @@ psycopg2-binary==2.9.9
 asyncpg==0.29.0
 
 # Supabase
-supabase==2.3.0
-postgrest==0.13.0
+supabase>=2.3.0
+postgrest>=0.13.0
 
 # Authentication
 python-jose[cryptography]==3.3.0
