@@ -33,6 +33,73 @@ def init_db():
     from app.models.database import Base as ModelsBase
     ModelsBase.metadata.create_all(bind=engine)
 
+    # 初期ユーザー作成
+    _create_initial_users()
+
+def _create_initial_users():
+    """初期ユーザー（管理者・承認者・従業員）を作成"""
+    from app.models.database import User
+    from app.core.auth import get_password_hash
+
+    db = SessionLocal()
+    try:
+        # 既存の管理者をチェック
+        existing_admin = db.query(User).filter(User.email == "admin@company.com").first()
+        if existing_admin:
+            print("⚠️  初期ユーザー既存: スキップします")
+            return
+
+        # 初期ユーザーリスト
+        initial_users = [
+            {
+                "email": "admin@company.com",
+                "name": "システム管理者",
+                "hashed_password": get_password_hash("admin123!"),
+                "role": "admin",
+                "department": "情報システム部",
+                "position": "部長",
+                "employee_id": "ADM001",
+                "is_active": True
+            },
+            {
+                "email": "approver@company.com",
+                "name": "承認者 太郎",
+                "hashed_password": get_password_hash("approver123!"),
+                "role": "approver",
+                "department": "人事部",
+                "position": "課長",
+                "employee_id": "APP001",
+                "is_active": True
+            },
+            {
+                "email": "yamada@company.com",
+                "name": "山田 太郎",
+                "hashed_password": get_password_hash("password123!"),
+                "role": "user",
+                "department": "営業部",
+                "position": "主任",
+                "employee_id": "EMP001",
+                "is_active": True
+            }
+        ]
+
+        # ユーザーを作成
+        for user_data in initial_users:
+            user = User(**user_data)
+            db.add(user)
+
+        db.commit()
+        print("✅ 初期ユーザー作成完了")
+        print("   - admin@company.com / admin123!")
+        print("   - approver@company.com / approver123!")
+        print("   - yamada@company.com / password123!")
+
+    except Exception as e:
+        print(f"❌ 初期ユーザー作成エラー: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
 
 
 
