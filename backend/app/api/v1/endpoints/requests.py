@@ -25,12 +25,21 @@ class Request(BaseModel):
     applied_at: Optional[datetime] = None
     created_at: datetime
 
-class LeaveRequest(BaseModel):
+class LeaveRequestData(BaseModel):
     leave_type: str
     start_date: date
     end_date: date
     days: float
+    hours: Optional[float] = 0
     reason: str
+    handover_notes: Optional[str] = None
+    start_duration: Optional[str] = "full"
+    end_duration: Optional[str] = "full"
+    compensatory_work_date: Optional[date] = None
+
+class LeaveRequest(BaseModel):
+    request: Optional[dict] = None
+    leave_request: LeaveRequestData
 
 class OvertimeRequest(BaseModel):
     work_date: date
@@ -180,13 +189,15 @@ async def create_leave_request(
     """
     休暇申請を作成
     """
+    leave_data = request.leave_request
+
     # 親リクエストを作成
     new_request = RequestModel(
         type="leave",
         applicant_id=current_user["id"],
         status="draft",
-        title=f"{request.leave_type}申請",
-        description=request.reason
+        title=f"{leave_data.leave_type}申請",
+        description=leave_data.reason
     )
     db.add(new_request)
     db.flush()  # IDを取得するため
@@ -194,11 +205,16 @@ async def create_leave_request(
     # 休暇申請詳細を作成
     leave_request = LeaveRequestModel(
         request_id=new_request.id,
-        leave_type=request.leave_type,
-        start_date=request.start_date,
-        end_date=request.end_date,
-        days=request.days,
-        reason=request.reason
+        leave_type=leave_data.leave_type,
+        start_date=leave_data.start_date,
+        end_date=leave_data.end_date,
+        start_duration=leave_data.start_duration,
+        end_duration=leave_data.end_duration,
+        days=leave_data.days,
+        hours=leave_data.hours,
+        reason=leave_data.reason,
+        handover_notes=leave_data.handover_notes,
+        compensatory_work_date=leave_data.compensatory_work_date
     )
     db.add(leave_request)
     db.commit()
