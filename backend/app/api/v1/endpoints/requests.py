@@ -288,6 +288,37 @@ async def create_overtime_request(
         created_at=new_request.created_at
     )
 
+@router.delete("/{request_id}")
+async def cancel_request(
+    request_id: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    申請を取り消し
+    """
+    request = db.query(RequestModel).filter(RequestModel.id == int(request_id)).first()
+
+    if not request:
+        raise HTTPException(status_code=404, detail="申請が見つかりません")
+
+    # 申請者本人のみ取り消し可能
+    if request.applicant_id != current_user["id"]:
+        raise HTTPException(status_code=403, detail="この申請を取り消す権限がありません")
+
+    # 承認待ちの場合のみ取り消し可能
+    if request.status != "pending":
+        raise HTTPException(status_code=400, detail="承認待ちの申請のみ取り消しできます")
+
+    # ステータスを「取り消し」に変更
+    request.status = "cancelled"
+    db.commit()
+
+    return {
+        "success": True,
+        "message": "申請を取り消しました"
+    }
+
 @router.post("/expense", response_model=Request)
 async def create_expense_request(
     request: AdvancePaymentRequest,

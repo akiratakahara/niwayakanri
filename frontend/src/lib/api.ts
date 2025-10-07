@@ -149,6 +149,12 @@ export class ApiClient {
     return this.request(`/api/v1/requests/${requestId}`)
   }
 
+  async cancelRequest(requestId: string) {
+    return this.request(`/api/v1/requests/${requestId}`, {
+      method: 'DELETE'
+    })
+  }
+
   async createLeaveRequest(data: any) {
     // バックエンドが期待する形式に変換
     const requestData = {

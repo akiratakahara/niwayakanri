@@ -36,7 +36,10 @@
       "Bash(tskill:*)",
       "Bash(tasklist)",
       "Bash(cmd /c:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: 本番環境デプロイ準備完了\n\n- PostgreSQL対応（DATABASE_URLで切り替え可能）\n- Docker化完了（backend/frontend）\n- 環境変数テンプレート作成（.env.production.example）\n- 認証機能の修正（/api/v1/auth/me エンドポイント）\n- フロントエンド・バックエンドの統合\n- Railway デプロイ準備完了\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

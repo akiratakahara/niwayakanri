@@ -11,6 +11,7 @@ export default function DashboardPage() {
   const [requests, setRequests] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState<string | null>(null)
+  const [cancelling, setCancelling] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -39,6 +40,33 @@ export default function DashboardPage() {
 
     fetchData()
   }, [authUser])
+
+  const handleCancelRequest = async (requestId: string) => {
+    if (!confirm('この申請を取り消しますか？')) {
+      return
+    }
+
+    setCancelling(requestId)
+    try {
+      await apiClient.cancelRequest(requestId)
+      // 申請一覧を再取得
+      const requestsData = await apiClient.getRequests()
+      if (authUser && authUser.role === 'user') {
+        const filteredRequests = (requestsData as any[]).filter(
+          (req: any) => req.applicant_id === authUser.id || req.applicant_id === authUser.user_id
+        )
+        setRequests(filteredRequests)
+      } else {
+        setRequests(requestsData as any[])
+      }
+      alert('申請を取り消しました')
+    } catch (error) {
+      console.error('Cancel error:', error)
+      alert('申請の取り消しに失敗しました')
+    } finally {
+      setCancelling(null)
+    }
+  }
 
   const handleExport = async (format: 'pdf' | 'csv' | 'excel') => {
     setExporting(format)
@@ -220,12 +248,14 @@ export default function DashboardPage() {
                             <span className={`badge ${
                               request.status === 'approved' ? 'badge-success' :
                               request.status === 'rejected' ? 'badge-error' :
-                              request.status === 'applied' ? 'badge-warning' :
+                              request.status === 'pending' ? 'badge-warning' :
+                              request.status === 'cancelled' ? 'badge-default' :
                               'badge-default'
                             }`}>
                               {request.status === 'approved' && '承認済み'}
                               {request.status === 'rejected' && '却下'}
-                              {request.status === 'applied' && '申請中'}
+                              {request.status === 'pending' && '承認待ち'}
+                              {request.status === 'cancelled' && '取り消し'}
                               {request.status === 'draft' && '下書き'}
                             </span>
                           </td>
@@ -236,9 +266,20 @@ export default function DashboardPage() {
                             }
                           </td>
                           <td className="table-cell">
-                            <Link href={`/requests/${request.id}`} className="btn btn-sm btn-primary">
-                              詳細
-                            </Link>
+                            <div className="flex gap-2">
+                              <Link href={`/requests/${request.id}`} className="btn btn-sm btn-primary">
+                                詳細
+                              </Link>
+                              {request.status === 'pending' && (
+                                <button
+                                  onClick={() => handleCancelRequest(request.id)}
+                                  disabled={cancelling === request.id}
+                                  className="btn btn-sm btn-outline text-red-600 hover:bg-red-50 disabled:opacity-50"
+                                >
+                                  {cancelling === request.id ? '取消中...' : '取り消し'}
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       )) : (
