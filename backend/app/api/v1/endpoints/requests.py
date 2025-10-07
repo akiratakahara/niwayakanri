@@ -41,12 +41,19 @@ class LeaveRequest(BaseModel):
     request: Optional[dict] = None
     leave_request: LeaveRequestData
 
-class OvertimeRequest(BaseModel):
+class OvertimeRequestData(BaseModel):
     work_date: date
     start_time: str
     end_time: str
+    break_time: Optional[int] = 0
     total_hours: float
+    overtime_type: Optional[str] = None
     reason: str
+    project_name: Optional[str] = None
+
+class OvertimeRequest(BaseModel):
+    request: Optional[dict] = None
+    overtime_request: OvertimeRequestData
 
 class HolidayWorkRequest(BaseModel):
     """休日出勤申請"""
@@ -240,13 +247,15 @@ async def create_overtime_request(
     """
     時間外労働申請を作成
     """
+    overtime_data = request.overtime_request
+
     # 親リクエストを作成
     new_request = RequestModel(
         type="overtime",
         applicant_id=current_user["id"],
         status="draft",
         title="時間外労働申請",
-        description=request.reason
+        description=overtime_data.reason
     )
     db.add(new_request)
     db.flush()
@@ -254,11 +263,11 @@ async def create_overtime_request(
     # 残業申請詳細を作成
     overtime_request = OvertimeRequestModel(
         request_id=new_request.id,
-        work_date=request.work_date,
-        start_time=request.start_time,
-        end_time=request.end_time,
-        total_hours=request.total_hours,
-        reason=request.reason
+        work_date=overtime_data.work_date,
+        start_time=overtime_data.start_time,
+        end_time=overtime_data.end_time,
+        total_hours=overtime_data.total_hours,
+        reason=overtime_data.reason
     )
     db.add(overtime_request)
     db.commit()
