@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
-from typing import List
+from typing import List, Union
+from pydantic import field_validator
 import os
 
 class Settings(BaseSettings):
@@ -15,8 +16,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
 
     # CORS設定
-    ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:3001", "https://niwayakanri.com"]
-    ALLOWED_HOSTS: List[str] = ["localhost", "niwayakanri.com"]
+    ALLOWED_ORIGINS: Union[List[str], str] = "http://localhost:3000,http://localhost:3001,https://niwayakanri.com"
+    ALLOWED_HOSTS: Union[List[str], str] = "localhost,niwayakanri.com"
 
     # アプリケーション設定
     APP_NAME: str = "勤怠・社内申請システム"
@@ -25,7 +26,14 @@ class Settings(BaseSettings):
     # ログ設定
     LOG_LEVEL: str = "INFO"
     LOG_FORMAT: str = "json"
-    
+
+    @field_validator('ALLOWED_ORIGINS', 'ALLOWED_HOSTS', mode='before')
+    @classmethod
+    def parse_cors(cls, v):
+        if isinstance(v, str):
+            return [origin.strip() for origin in v.split(',')]
+        return v
+
     class Config:
         env_file = ".env"
         case_sensitive = True
