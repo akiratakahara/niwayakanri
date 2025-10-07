@@ -39,7 +39,7 @@ def init_db():
 def _create_initial_users():
     """初期ユーザー（管理者・承認者・従業員）を作成"""
     from app.models.database import User
-    from app.core.auth import get_password_hash
+    from app.core.security import get_password_hash
 
     db = SessionLocal()
     try:
