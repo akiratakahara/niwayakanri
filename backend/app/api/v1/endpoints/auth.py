@@ -3,9 +3,10 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
 from datetime import timedelta
+import bcrypt
 
 from app.core.database import get_db
-from app.core.security import verify_password, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+from app.core.security import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
 from app.models.database import User
 
 router = APIRouter()
@@ -35,13 +36,17 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
             detail="メールアドレスまたはパスワードが正しくありません"
         )
 
-    # パスワード検証
-    print(f"[LOGIN DEBUG] Email: {request.email}")
-    print(f"[LOGIN DEBUG] Input password: {request.password}")
-    print(f"[LOGIN DEBUG] Stored hash: {user.hashed_password[:60]}")
-    print(f"[LOGIN DEBUG] Password verification result: {verify_password(request.password, user.hashed_password)}")
+    # パスワード検証（bcryptを直接使用）
+    try:
+        password_valid = bcrypt.checkpw(
+            request.password.encode('utf-8'),
+            user.hashed_password.encode('utf-8')
+        )
+    except Exception as e:
+        print(f"[LOGIN ERROR] Password verification failed: {e}")
+        password_valid = False
 
-    if not verify_password(request.password, user.hashed_password):
+    if not password_valid:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="メールアドレスまたはパスワードが正しくありません"
