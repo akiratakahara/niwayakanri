@@ -33,9 +33,6 @@ def init_db():
     from app.models.database import Base as ModelsBase
     ModelsBase.metadata.create_all(bind=engine)
 
-    # 初期ユーザー作成
-    _create_initial_users()
-
 def _create_initial_users():
     """初期ユーザー（管理者・承認者・従業員）を作成"""
     from app.models.database import User
