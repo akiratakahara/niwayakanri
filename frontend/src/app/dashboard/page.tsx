@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 
 export default function DashboardPage() {
-  const { user: authUser, isAdmin } = useAuth()
+  const { user: authUser, isAdmin, logout } = useAuth()
   const [user, setUser] = useState<any>(null)
   const [requests, setRequests] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -126,7 +126,10 @@ export default function DashboardPage() {
                   </Link>
                 </>
               )}
-              <button className="btn btn-secondary">
+              <button
+                onClick={() => logout()}
+                className="btn btn-secondary"
+              >
                 ログアウト
               </button>
             </div>
