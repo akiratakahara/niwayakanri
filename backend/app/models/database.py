@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, Float, DateTime, ForeignKey, Boolean, Text, Date
+from sqlalchemy import Column, String, Integer, Float, DateTime, ForeignKey, Boolean, Text, Date, JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -189,3 +189,39 @@ class UploadedFile(Base):
     file_type = Column(String)
     file_size = Column(Integer)
     uploaded_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ConstructionDailyReport(Base):
+    __tablename__ = "construction_daily_reports"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    report_date = Column(Date, nullable=False)
+    site_name = Column(String, nullable=False)
+    work_location = Column(String, nullable=False)
+    work_content = Column(Text, nullable=False)
+
+    # 時間
+    early_start = Column(String)
+    work_start_time = Column(String, nullable=False)
+    work_end_time = Column(String, nullable=False)
+    overtime = Column(String)
+
+    # JSON形式で保存
+    workers = Column(JSON)  # [{"category": "世話役", "name": "田中太郎"}]
+    own_vehicles = Column(JSON)
+    machinery = Column(JSON)
+    other_machinery = Column(JSON)
+    lease_machines = Column(JSON)
+    ky_activities = Column(JSON)
+
+    # その他
+    other_materials = Column(Text)
+    customer_requests = Column(Text)
+    office_confirmation = Column(Text)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    user = relationship("User")

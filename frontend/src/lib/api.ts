@@ -284,10 +284,39 @@ export class ApiClient {
 
   // 工事日報
   async createConstructionDailyReport(data: any) {
-    return this.request('/api/v1/requests/construction-daily', {
+    return this.request('/api/v1/construction-daily/', {
       method: 'POST',
       body: JSON.stringify(data),
     })
+  }
+
+  async getConstructionDailyReports() {
+    return this.request('/api/v1/construction-daily/')
+  }
+
+  async downloadConstructionDailyPDF(reportId: string) {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null
+    const url = `${this.baseUrl}/api/v1/construction-daily/${reportId}/pdf`
+
+    const headers: Record<string, string> = {}
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+
+    const response = await fetch(url, { headers })
+    if (!response.ok) {
+      throw new Error('PDFのダウンロードに失敗しました')
+    }
+
+    const blob = await response.blob()
+    const downloadUrl = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = downloadUrl
+    a.download = `construction_daily_${reportId}.pdf`
+    document.body.appendChild(a)
+    a.click()
+    window.URL.revokeObjectURL(downloadUrl)
+    document.body.removeChild(a)
   }
 
   // 立替金申請
