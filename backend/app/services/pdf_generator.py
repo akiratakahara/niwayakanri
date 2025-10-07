@@ -18,19 +18,23 @@ def generate_construction_daily_pdf(report, user) -> bytes:
     buffer = io.BytesIO()
 
     # 日本語フォントを登録（システムにあるフォントを使用）
+    font_registered = False
     try:
         # Windowsの場合
         pdfmetrics.registerFont(TTFont('Japanese', 'C:\\Windows\\Fonts\\msgothic.ttc', subfontIndex=0))
+        font_registered = True
     except:
         try:
-            # Linuxの場合
-            pdfmetrics.registerFont(TTFont('Japanese', '/usr/share/fonts/truetype/takao-gothic/TakaoGothic.ttf'))
+            # Linuxの場合（Debian/Ubuntu）
+            pdfmetrics.registerFont(TTFont('Japanese', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'))
+            font_registered = True
         except:
-            # フォールバック（IPAフォント）
             try:
-                pdfmetrics.registerFont(TTFont('Japanese', '/usr/share/fonts/opentype/ipaexfont-gothic/ipaexg.ttf'))
+                # Linuxの場合（CentOS/RHEL）
+                pdfmetrics.registerFont(TTFont('Japanese', '/usr/share/fonts/liberation/LiberationSans-Regular.ttf'))
+                font_registered = True
             except:
-                # デフォルトフォントを使用
+                # フォントなしでも動作させる
                 pass
 
     # PDFドキュメント作成（A4サイズ、マージン小さめ）
@@ -47,27 +51,24 @@ def generate_construction_daily_pdf(report, user) -> bytes:
     styles = getSampleStyleSheet()
 
     # 日本語対応のスタイル
-    try:
-        title_style = ParagraphStyle(
-            'JapaneseTitle',
-            parent=styles['Heading1'],
-            fontName='Japanese',
-            fontSize=14,
-            alignment=TA_CENTER,
-            spaceAfter=2*mm
-        )
+    font_name = 'Japanese' if font_registered else 'Helvetica'
 
-        normal_style = ParagraphStyle(
-            'JapaneseNormal',
-            parent=styles['Normal'],
-            fontName='Japanese',
-            fontSize=7,
-            leading=8
-        )
-    except:
-        # フォントが登録できなかった場合はデフォルトを使用
-        title_style = styles['Heading1']
-        normal_style = styles['Normal']
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontName=font_name,
+        fontSize=14,
+        alignment=TA_CENTER,
+        spaceAfter=2*mm
+    )
+
+    normal_style = ParagraphStyle(
+        'CustomNormal',
+        parent=styles['Normal'],
+        fontName=font_name,
+        fontSize=7,
+        leading=8
+    )
 
     # コンテンツ構築
     content = []
@@ -85,7 +86,7 @@ def generate_construction_daily_pdf(report, user) -> bytes:
 
     basic_table = Table(basic_data, colWidths=[20*mm, 45*mm, 20*mm, 45*mm])
     basic_table.setStyle(TableStyle([
-        ('FONT', (0, 0), (-1, -1), 'Japanese', 7),
+        ('FONT', (0, 0), (-1, -1), font_name, 7),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
         ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
         ('BACKGROUND', (2, 0), (2, -1), colors.lightgrey),
@@ -102,7 +103,7 @@ def generate_construction_daily_pdf(report, user) -> bytes:
     ]
     time_table = Table(time_data, colWidths=[15*mm, 20*mm, 15*mm, 20*mm, 15*mm, 20*mm, 15*mm, 20*mm])
     time_table.setStyle(TableStyle([
-        ('FONT', (0, 0), (-1, -1), 'Japanese', 7),
+        ('FONT', (0, 0), (-1, -1), font_name, 7),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
         ('BACKGROUND', (0, 0), (0, 0), colors.lightgrey),
         ('BACKGROUND', (2, 0), (2, 0), colors.lightgrey),
@@ -120,7 +121,7 @@ def generate_construction_daily_pdf(report, user) -> bytes:
     ]
     work_table = Table(work_data, colWidths=[25*mm, 165*mm])
     work_table.setStyle(TableStyle([
-        ('FONT', (0, 0), (-1, -1), 'Japanese', 7),
+        ('FONT', (0, 0), (-1, -1), font_name, 7),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
         ('BACKGROUND', (0, 0), (0, 0), colors.lightgrey),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
@@ -137,7 +138,7 @@ def generate_construction_daily_pdf(report, user) -> bytes:
 
         worker_table = Table(worker_rows, colWidths=[30*mm, 70*mm])
         worker_table.setStyle(TableStyle([
-            ('FONT', (0, 0), (-1, -1), 'Japanese', 7),
+            ('FONT', (0, 0), (-1, -1), font_name, 7),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
             ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
@@ -159,7 +160,7 @@ def generate_construction_daily_pdf(report, user) -> bytes:
 
         vehicle_table = Table(vehicle_rows, colWidths=[25*mm, 30*mm, 25*mm, 20*mm])
         vehicle_table.setStyle(TableStyle([
-            ('FONT', (0, 0), (-1, -1), 'Japanese', 6),
+            ('FONT', (0, 0), (-1, -1), font_name, 6),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
             ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
@@ -179,7 +180,7 @@ def generate_construction_daily_pdf(report, user) -> bytes:
 
         machinery_table = Table(machinery_rows, colWidths=[40*mm, 40*mm])
         machinery_table.setStyle(TableStyle([
-            ('FONT', (0, 0), (-1, -1), 'Japanese', 6),
+            ('FONT', (0, 0), (-1, -1), font_name, 6),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
             ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
@@ -201,7 +202,7 @@ def generate_construction_daily_pdf(report, user) -> bytes:
 
             ky_table = Table(ky_rows, colWidths=[60*mm, 70*mm])
             ky_table.setStyle(TableStyle([
-                ('FONT', (0, 0), (-1, -1), 'Japanese', 6),
+                ('FONT', (0, 0), (-1, -1), font_name, 6),
                 ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
                 ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
                 ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
@@ -221,7 +222,7 @@ def generate_construction_daily_pdf(report, user) -> bytes:
         if remarks_data:
             remarks_table = Table(remarks_data, colWidths=[30*mm, 130*mm])
             remarks_table.setStyle(TableStyle([
-                ('FONT', (0, 0), (-1, -1), 'Japanese', 6),
+                ('FONT', (0, 0), (-1, -1), font_name, 6),
                 ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
                 ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
                 ('VALIGN', (0, 0), (-1, -1), 'TOP'),
