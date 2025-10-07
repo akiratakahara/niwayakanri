@@ -55,8 +55,8 @@ class OvertimeRequest(BaseModel):
     request: Optional[dict] = None
     overtime_request: OvertimeRequestData
 
-class HolidayWorkRequest(BaseModel):
-    """休日出勤申請"""
+class HolidayWorkRequestData(BaseModel):
+    """休日出勤申請データ"""
     work_date: date
     start_time: str
     end_time: str
@@ -65,12 +65,22 @@ class HolidayWorkRequest(BaseModel):
     reason: str
     compensatory_leave_date: Optional[date] = None
 
-class AdvancePaymentRequest(BaseModel):
-    """仮払金申請"""
+class HolidayWorkRequest(BaseModel):
+    """休日出勤申請"""
+    request: Optional[dict] = None
+    holiday_work_request: HolidayWorkRequestData
+
+class AdvancePaymentRequestData(BaseModel):
+    """仮払金申請データ"""
     applicant_name: str
     site_name: str
     application_date: date
     request_amount: int
+
+class AdvancePaymentRequest(BaseModel):
+    """仮払金申請"""
+    request: Optional[dict] = None
+    advance_payment_request: AdvancePaymentRequestData
 
 class ExpenseLine(BaseModel):
     """精算明細"""
@@ -328,13 +338,17 @@ async def create_expense_request(
     """
     仮払金申請を作成
     """
+    expense_data = request.advance_payment_request
+
     # 親リクエストを作成
+    from datetime import datetime
     new_request = RequestModel(
         type="expense",
         applicant_id=current_user["id"],
-        status="draft",
-        title=f"仮払金申請 - {request.site_name}",
-        description=f"申請者: {request.applicant_name}, 現場: {request.site_name}, 金額: ¥{request.request_amount:,}"
+        status="pending",
+        title=f"仮払金申請 - {expense_data.site_name}",
+        description=f"申請者: {expense_data.applicant_name}, 現場: {expense_data.site_name}, 金額: ¥{expense_data.request_amount:,}",
+        applied_at=datetime.now()
     )
     db.add(new_request)
     db.flush()
@@ -342,10 +356,10 @@ async def create_expense_request(
     # 仮払金申請詳細を作成
     expense_request = ExpenseRequestModel(
         request_id=new_request.id,
-        applicant_name=request.applicant_name,
-        site_name=request.site_name,
-        application_date=request.application_date,
-        request_amount=request.request_amount
+        applicant_name=expense_data.applicant_name,
+        site_name=expense_data.site_name,
+        application_date=expense_data.application_date,
+        request_amount=expense_data.request_amount
     )
     db.add(expense_request)
     db.commit()
@@ -496,13 +510,17 @@ async def create_holiday_work_request(
     """
     休日出勤申請を作成
     """
+    holiday_data = request.holiday_work_request
+
     # 親リクエストを作成
+    from datetime import datetime
     new_request = RequestModel(
         type="holiday_work",
         applicant_id=current_user["id"],
-        status="draft",
+        status="pending",
         title="休日出勤申請",
-        description=request.reason
+        description=holiday_data.reason,
+        applied_at=datetime.now()
     )
     db.add(new_request)
     db.flush()
@@ -510,13 +528,13 @@ async def create_holiday_work_request(
     # 休日出勤申請詳細を作成
     holiday_work_request = HolidayWorkRequestModel(
         request_id=new_request.id,
-        work_date=request.work_date,
-        start_time=request.start_time,
-        end_time=request.end_time,
-        break_time=request.break_time,
-        work_content=request.work_content,
-        reason=request.reason,
-        compensatory_leave_date=request.compensatory_leave_date
+        work_date=holiday_data.work_date,
+        start_time=holiday_data.start_time,
+        end_time=holiday_data.end_time,
+        break_time=holiday_data.break_time,
+        work_content=holiday_data.work_content,
+        reason=holiday_data.reason,
+        compensatory_leave_date=holiday_data.compensatory_leave_date
     )
     db.add(holiday_work_request)
     db.commit()
