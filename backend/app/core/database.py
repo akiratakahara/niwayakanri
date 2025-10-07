@@ -39,7 +39,10 @@ def init_db():
 def _create_initial_users():
     """初期ユーザー（管理者・承認者・従業員）を作成"""
     from app.models.database import User
-    from app.core.security import get_password_hash
+    from passlib.context import CryptContext
+
+    # bcrypt設定を直接使用
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
     db = SessionLocal()
     try:
@@ -49,36 +52,33 @@ def _create_initial_users():
             print("⚠️  初期ユーザー既存: スキップします")
             return
 
-        # 初期ユーザーリスト
+        # 初期ユーザーリスト（短いパスワードを使用）
         initial_users = [
             {
                 "email": "admin@company.com",
                 "name": "システム管理者",
-                "hashed_password": get_password_hash("admin123!"),
+                "hashed_password": pwd_context.hash("admin123"),
                 "role": "admin",
                 "department": "情報システム部",
                 "position": "部長",
-                "employee_id": "ADM001",
                 "is_active": True
             },
             {
                 "email": "approver@company.com",
                 "name": "承認者 太郎",
-                "hashed_password": get_password_hash("approver123!"),
+                "hashed_password": pwd_context.hash("approver123"),
                 "role": "approver",
                 "department": "人事部",
                 "position": "課長",
-                "employee_id": "APP001",
                 "is_active": True
             },
             {
                 "email": "yamada@company.com",
                 "name": "山田 太郎",
-                "hashed_password": get_password_hash("password123!"),
+                "hashed_password": pwd_context.hash("password123"),
                 "role": "user",
                 "department": "営業部",
                 "position": "主任",
-                "employee_id": "EMP001",
                 "is_active": True
             }
         ]
@@ -90,12 +90,14 @@ def _create_initial_users():
 
         db.commit()
         print("✅ 初期ユーザー作成完了")
-        print("   - admin@company.com / admin123!")
-        print("   - approver@company.com / approver123!")
-        print("   - yamada@company.com / password123!")
+        print("   - admin@company.com / admin123")
+        print("   - approver@company.com / approver123")
+        print("   - yamada@company.com / password123")
 
     except Exception as e:
         print(f"❌ 初期ユーザー作成エラー: {e}")
+        import traceback
+        traceback.print_exc()
         db.rollback()
     finally:
         db.close()
