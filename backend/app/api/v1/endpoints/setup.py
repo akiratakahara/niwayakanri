@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.database import User
-from app.core.security import get_password_hash
+import bcrypt
 
 router = APIRouter()
 
@@ -16,12 +16,16 @@ async def initialize_users(db: Session = Depends(get_db)):
     if existing_user:
         raise HTTPException(status_code=400, detail="ユーザーが既に存在します")
 
+    # bcryptで直接ハッシュ化
+    def hash_password(password: str) -> str:
+        return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
     # 初期ユーザー
     users_to_create = [
         {
             "email": "admin@company.com",
             "name": "システム管理者",
-            "hashed_password": get_password_hash("admin123"),
+            "hashed_password": hash_password("admin123"),
             "role": "admin",
             "department": "情報システム部",
             "position": "部長",
@@ -30,7 +34,7 @@ async def initialize_users(db: Session = Depends(get_db)):
         {
             "email": "approver@company.com",
             "name": "承認者 太郎",
-            "hashed_password": get_password_hash("approver123"),
+            "hashed_password": hash_password("approver123"),
             "role": "approver",
             "department": "人事部",
             "position": "課長",
@@ -39,7 +43,7 @@ async def initialize_users(db: Session = Depends(get_db)):
         {
             "email": "yamada@company.com",
             "name": "山田 太郎",
-            "hashed_password": get_password_hash("password123"),
+            "hashed_password": hash_password("password123"),
             "role": "user",
             "department": "営業部",
             "position": "主任",
@@ -64,4 +68,6 @@ async def initialize_users(db: Session = Depends(get_db)):
         }
     except Exception as e:
         db.rollback()
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"ユーザー作成エラー: {str(e)}")
