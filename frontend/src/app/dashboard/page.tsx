@@ -174,10 +174,10 @@ export default function DashboardPage() {
               </div>
             </Link>
 
-            <Link href="/requests/construction-daily" className="card hover:shadow-lg transition-shadow">
+            <Link href="/requests/construction-daily-list" className="card hover:shadow-lg transition-shadow">
               <div className="card-content">
                 <h3 className="card-title text-lg">工事日報</h3>
-                <p className="card-description">現場作業の日報作成</p>
+                <p className="card-description">日報の確認・PDF出力</p>
               </div>
             </Link>
           </div>
