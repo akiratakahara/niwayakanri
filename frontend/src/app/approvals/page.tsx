@@ -99,20 +99,24 @@ function ApprovalsContent() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'pending': return 'bg-blue-100 text-blue-800'
       case 'applied': return 'bg-blue-100 text-blue-800'
       case 'approved': return 'bg-green-100 text-green-800'
       case 'rejected': return 'bg-red-100 text-red-800'
       case 'returned': return 'bg-yellow-100 text-yellow-800'
+      case 'cancelled': return 'bg-gray-100 text-gray-800'
       default: return 'bg-gray-100 text-gray-800'
     }
   }
 
   const getStatusText = (status: string) => {
     switch (status) {
+      case 'pending': return '承認待ち'
       case 'applied': return '承認待ち'
       case 'approved': return '承認済み'
       case 'rejected': return '却下'
       case 'returned': return '差戻し'
+      case 'cancelled': return '取り消し'
       default: return status
     }
   }
@@ -124,6 +128,7 @@ function ApprovalsContent() {
       case 'expense': return '仮払金申請'
       case 'reimbursement': return '立替金申請'
       case 'settlement': return '仮払金精算'
+      case 'holiday_work': return '休日出勤申請'
       default: return type
     }
   }
@@ -200,10 +205,11 @@ function ApprovalsContent() {
                     className="input"
                   >
                     <option value="all">すべて</option>
-                    <option value="applied">承認待ち</option>
+                    <option value="pending">承認待ち</option>
                     <option value="approved">承認済み</option>
                     <option value="rejected">却下</option>
                     <option value="returned">差戻し</option>
+                    <option value="cancelled">取り消し</option>
                   </select>
                 </div>
                 <div className="flex-1">
@@ -284,7 +290,7 @@ function ApprovalsContent() {
                         >
                           詳細
                         </Link>
-                        {request.status === 'applied' && (
+                        {(request.status === 'pending' || request.status === 'applied') && (
                           <div className="flex space-x-2">
                             <button
                               onClick={() => handleReturn(request.id)}

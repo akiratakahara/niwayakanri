@@ -17,15 +17,22 @@ async def get_approval_requests(
     """
     承認待ちの申請一覧を取得（管理者のみ）
     """
-    # 承認待ち（applied）ステータスの申請を取得
-    requests = db.query(RequestModel).filter(
-        RequestModel.status == "applied"
-    ).order_by(RequestModel.applied_at.desc()).all()
+    # 全ステータスの申請を取得（承認済み、却下、差戻しも含む）
+    requests = db.query(RequestModel).order_by(RequestModel.created_at.desc()).all()
 
     # レスポンスデータを構築
     approval_requests = []
     for req in requests:
         applicant = db.query(User).filter(User.id == req.applicant_id).first()
+
+        # 優先度を計算（簡易版：申請日が古いほど優先度高）
+        priority = "medium"
+        if req.applied_at:
+            days_old = (datetime.now() - req.applied_at).days
+            if days_old > 3:
+                priority = "high"
+            elif days_old < 1:
+                priority = "low"
 
         approval_requests.append({
             "id": str(req.id),
@@ -35,12 +42,9 @@ async def get_approval_requests(
             "status": req.status,
             "title": req.title,
             "description": req.description,
-            "applied_at": req.applied_at.isoformat() if req.applied_at else None,
-            "created_at": req.created_at.isoformat()
+            "applied_at": req.applied_at.isoformat() if req.applied_at else req.created_at.isoformat(),
+            "created_at": req.created_at.isoformat(),
+            "priority": priority
         })
 
-    return {
-        "success": True,
-        "data": approval_requests,
-        "total": len(approval_requests)
-    }
+    return approval_requests
