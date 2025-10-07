@@ -47,4 +47,8 @@ async def get_approval_requests(
             "priority": priority
         })
 
-    return approval_requests
+    return {
+        "success": True,
+        "data": approval_requests,
+        "total": len(approval_requests)
+    }
