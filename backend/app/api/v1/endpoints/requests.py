@@ -199,12 +199,14 @@ async def create_leave_request(
     leave_data = request.leave_request
 
     # 親リクエストを作成
+    from datetime import datetime
     new_request = RequestModel(
         type="leave",
         applicant_id=current_user["id"],
-        status="draft",
+        status="pending",
         title=f"{leave_data.leave_type}申請",
-        description=leave_data.reason
+        description=leave_data.reason,
+        applied_at=datetime.now()
     )
     db.add(new_request)
     db.flush()  # IDを取得するため
@@ -250,12 +252,14 @@ async def create_overtime_request(
     overtime_data = request.overtime_request
 
     # 親リクエストを作成
+    from datetime import datetime
     new_request = RequestModel(
         type="overtime",
         applicant_id=current_user["id"],
-        status="draft",
+        status="pending",
         title="時間外労働申請",
-        description=overtime_data.reason
+        description=overtime_data.reason,
+        applied_at=datetime.now()
     )
     db.add(new_request)
     db.flush()
