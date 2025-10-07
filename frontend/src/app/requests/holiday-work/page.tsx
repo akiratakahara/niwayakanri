@@ -32,7 +32,11 @@ export default function HolidayWorkRequestPage() {
     setError('')
 
     try {
-      const response = await apiClient.createHolidayWorkRequest(formData)
+      // バックエンドが期待するネスト構造に変換
+      const requestData = {
+        holiday_work_request: formData
+      }
+      const response = await apiClient.createHolidayWorkRequest(requestData)
       console.log('休日出勤申請作成成功:', response)
       router.push('/dashboard')
     } catch (err) {

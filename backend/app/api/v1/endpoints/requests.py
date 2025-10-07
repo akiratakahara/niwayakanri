@@ -168,7 +168,7 @@ async def get_requests(
         "total": len(requests_data)
     }
 
-@router.get("/{request_id}", response_model=Request)
+@router.get("/{request_id}")
 async def get_request(
     request_id: str,
     db: Session = Depends(get_db),
@@ -186,16 +186,31 @@ async def get_request(
     if current_user.get("role") != "admin" and request.applicant_id != current_user["id"]:
         raise HTTPException(status_code=403, detail="この申請を閲覧する権限がありません")
 
-    return Request(
-        id=str(request.id),
-        type=request.type,
-        applicant_id=str(request.applicant_id),
-        status=request.status,
-        title=request.title,
-        description=request.description,
-        applied_at=request.applied_at,
-        created_at=request.created_at
-    )
+    # 申請者情報を取得
+    applicant = db.query(User).filter(User.id == request.applicant_id).first()
+
+    return {
+        "id": str(request.id),
+        "type": request.type,
+        "applicant_id": str(request.applicant_id),
+        "applicant_name": applicant.name if applicant else "不明",
+        "status": request.status,
+        "title": request.title,
+        "description": request.description,
+        "applied_at": request.applied_at.isoformat() if request.applied_at else None,
+        "created_at": request.created_at.isoformat()
+    }
+
+def get_leave_type_japanese(leave_type: str) -> str:
+    """休暇タイプを日本語に変換"""
+    leave_types = {
+        "paid": "有給休暇",
+        "compensatory": "代休",
+        "special": "特別休暇",
+        "sick": "病欠",
+        "other": "その他休暇"
+    }
+    return leave_types.get(leave_type, leave_type)
 
 @router.post("/leave", response_model=Request)
 async def create_leave_request(
@@ -210,11 +225,12 @@ async def create_leave_request(
 
     # 親リクエストを作成
     from datetime import datetime
+    leave_type_ja = get_leave_type_japanese(leave_data.leave_type)
     new_request = RequestModel(
         type="leave",
         applicant_id=current_user["id"],
         status="pending",
-        title=f"{leave_data.leave_type}申請",
+        title=f"{leave_type_ja}申請",
         description=leave_data.reason,
         applied_at=datetime.now()
     )

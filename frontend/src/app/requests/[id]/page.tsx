@@ -9,6 +9,7 @@ interface RequestDetail {
   id: string
   type: string
   applicant_id: string
+  applicant_name?: string
   status: string
   title: string
   description: string
@@ -205,7 +206,7 @@ export default function RequestDetailPage() {
                           <div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
                             <div>
                               <p className="text-sm text-gray-500">申請者</p>
-                              <p className="text-sm font-medium text-gray-900">田中太郎</p>
+                              <p className="text-sm font-medium text-gray-900">{request.applicant_name || '不明'}</p>
                             </div>
                             <div className="text-right text-sm whitespace-nowrap text-gray-500">
                               {new Date(request.created_at).toLocaleString('ja-JP')}
