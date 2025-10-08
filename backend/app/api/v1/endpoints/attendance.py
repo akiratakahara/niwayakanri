@@ -32,7 +32,7 @@ def get_weekday_name(d: date) -> str:
 async def get_monthly_shift(
     year: int,
     month: int,
-    current_user: User = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -40,7 +40,7 @@ async def get_monthly_shift(
     - 全従業員の休暇・出勤状況を一覧表示
     - 管理者のみアクセス可能
     """
-    if current_user.role != "admin":
+    if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="管理者のみアクセスできます")
 
     # 全ユーザー取得
@@ -165,7 +165,7 @@ async def get_monthly_timesheet(
     user_id: int,
     year: int,
     month: int,
-    current_user: User = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -347,7 +347,7 @@ async def get_monthly_timesheet(
 async def get_leave_balance(
     user_id: int,
     fiscal_year: int = None,
-    current_user: User = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -399,13 +399,13 @@ async def update_leave_balance(
     paid_leave_total: float = 0.0,
     compensatory_leave_total: float = 0.0,
     special_leave_total: float = 0.0,
-    current_user: User = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
     休暇残高を更新（管理者のみ）
     """
-    if current_user.role != "admin":
+    if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="管理者のみアクセスできます")
 
     balance = db.query(LeaveBalance).filter(
@@ -447,14 +447,14 @@ async def update_leave_balance(
 async def get_shift_table_pdf(
     year: int,
     month: int,
-    current_user: User = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
     月次シフト表をPDFで出力
     - 管理者のみアクセス可能
     """
-    if current_user.role != "admin":
+    if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="管理者のみアクセスできます")
 
     # シフトデータを取得
@@ -479,7 +479,7 @@ async def get_timesheet_pdf(
     user_id: int,
     year: int,
     month: int,
-    current_user: User = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
