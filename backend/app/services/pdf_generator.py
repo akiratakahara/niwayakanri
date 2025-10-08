@@ -18,25 +18,8 @@ def generate_construction_daily_pdf(report, user) -> bytes:
     """
     buffer = io.BytesIO()
 
-    # 日本語フォントを登録（システムにあるフォントを使用）
-    font_registered = False
-    try:
-        # Windowsの場合
-        pdfmetrics.registerFont(TTFont('Japanese', 'C:\\Windows\\Fonts\\msgothic.ttc', subfontIndex=0))
-        font_registered = True
-    except:
-        try:
-            # Linuxの場合（Debian/Ubuntu）
-            pdfmetrics.registerFont(TTFont('Japanese', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'))
-            font_registered = True
-        except:
-            try:
-                # Linuxの場合（CentOS/RHEL）
-                pdfmetrics.registerFont(TTFont('Japanese', '/usr/share/fonts/liberation/LiberationSans-Regular.ttf'))
-                font_registered = True
-            except:
-                # フォントなしでも動作させる
-                pass
+    # 日本語フォントを登録
+    font_registered, font_name = _register_japanese_font()
 
     # PDFドキュメント作成（A4サイズ、マージン小さめ）
     doc = SimpleDocTemplate(
@@ -50,9 +33,6 @@ def generate_construction_daily_pdf(report, user) -> bytes:
 
     # スタイル定義
     styles = getSampleStyleSheet()
-
-    # 日本語対応のスタイル
-    font_name = 'Japanese' if font_registered else 'Helvetica'
 
     title_style = ParagraphStyle(
         'CustomTitle',
@@ -252,14 +232,14 @@ def _register_japanese_font() -> tuple[bool, str]:
         font_name = 'Japanese'
     except:
         try:
-            # Linuxの場合（Debian/Ubuntu）
-            pdfmetrics.registerFont(TTFont('Japanese', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'))
+            # Linuxの場合（Noto Sans CJK JP - Docker環境）
+            pdfmetrics.registerFont(TTFont('Japanese', '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc', subfontIndex=0))
             font_registered = True
             font_name = 'Japanese'
         except:
             try:
-                # Linuxの場合（CentOS/RHEL）
-                pdfmetrics.registerFont(TTFont('Japanese', '/usr/share/fonts/liberation/LiberationSans-Regular.ttf'))
+                # Linuxの場合（別のパス）
+                pdfmetrics.registerFont(TTFont('Japanese', '/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc', subfontIndex=0))
                 font_registered = True
                 font_name = 'Japanese'
             except:

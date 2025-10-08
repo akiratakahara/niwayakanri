@@ -28,21 +28,8 @@ def get_weekday_name(d: date) -> str:
     return weekdays[d.weekday()]
 
 
-@router.get("/shift/{year}/{month}")
-async def get_monthly_shift(
-    year: int,
-    month: int,
-    current_user: dict = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    月次シフト表データを取得
-    - 全従業員の休暇・出勤状況を一覧表示
-    - 管理者のみアクセス可能
-    """
-    if current_user.get("role") != "admin":
-        raise HTTPException(status_code=403, detail="管理者のみアクセスできます")
-
+def _get_shift_data(year: int, month: int, db: Session) -> dict:
+    """シフト表データを取得（内部関数）"""
     # 全ユーザー取得
     users = db.query(User).filter(User.is_active == True).all()
 
@@ -160,21 +147,26 @@ async def get_monthly_shift(
     return result
 
 
-@router.get("/timesheet/{user_id}/{year}/{month}")
-async def get_monthly_timesheet(
-    user_id: int,
+@router.get("/shift/{year}/{month}")
+async def get_monthly_shift(
     year: int,
     month: int,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    個人別月次出勤簿データを取得
-    - 自分または管理者のみアクセス可能
+    月次シフト表データを取得
+    - 全従業員の休暇・出勤状況を一覧表示
+    - 管理者のみアクセス可能
     """
-    if current_user.get("id") != user_id and current_user.get("role") != "admin":
-        raise HTTPException(status_code=403, detail="アクセス権限がありません")
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="管理者のみアクセスできます")
 
+    return _get_shift_data(year, month, db)
+
+
+def _get_timesheet_data(user_id: int, year: int, month: int, db: Session) -> dict:
+    """出勤簿データを取得（内部関数）"""
     # 対象ユーザー取得
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -343,6 +335,24 @@ async def get_monthly_timesheet(
     return result
 
 
+@router.get("/timesheet/{user_id}/{year}/{month}")
+async def get_monthly_timesheet(
+    user_id: int,
+    year: int,
+    month: int,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    個人別月次出勤簿データを取得
+    - 自分または管理者のみアクセス可能
+    """
+    if current_user.get("id") != user_id and current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="アクセス権限がありません")
+
+    return _get_timesheet_data(user_id, year, month, db)
+
+
 @router.get("/balance/{user_id}")
 async def get_leave_balance(
     user_id: int,
@@ -458,7 +468,7 @@ async def get_shift_table_pdf(
         raise HTTPException(status_code=403, detail="管理者のみアクセスできます")
 
     # シフトデータを取得
-    shift_data = await get_monthly_shift(year, month, current_user, db)
+    shift_data = _get_shift_data(year, month, db)
 
     # PDF生成
     pdf_bytes = generate_shift_table_pdf(shift_data)
@@ -490,7 +500,7 @@ async def get_timesheet_pdf(
         raise HTTPException(status_code=403, detail="アクセス権限がありません")
 
     # 出勤簿データを取得
-    timesheet_data = await get_monthly_timesheet(user_id, year, month, current_user, db)
+    timesheet_data = _get_timesheet_data(user_id, year, month, db)
 
     # PDF生成
     pdf_bytes = generate_timesheet_pdf(timesheet_data)
