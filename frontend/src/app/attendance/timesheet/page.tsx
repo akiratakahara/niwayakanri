@@ -58,16 +58,16 @@ export default function TimesheetPage() {
     const fetchUsers = async () => {
       if (user?.role === 'admin') {
         try {
-          const data = await apiClient.getUsers()
+          const data = await apiClient.getUsers() as any[]
           setUsers(data)
           if (data.length > 0) {
-            setSelectedUserId(data[0].id)
+            setSelectedUserId(Number(data[0].id))
           }
         } catch (err) {
           console.error('ユーザー一覧取得エラー:', err)
         }
       } else if (user) {
-        setSelectedUserId(user.id)
+        setSelectedUserId(Number(user.id))
       }
     }
 
@@ -82,7 +82,7 @@ export default function TimesheetPage() {
     setError(null)
 
     try {
-      const data = await apiClient.getMonthlyTimesheet(selectedUserId, year, month)
+      const data = await apiClient.getMonthlyTimesheet(selectedUserId, year, month) as TimesheetData
       setTimesheetData(data)
     } catch (err: any) {
       setError(err.message || '出勤簿の取得に失敗しました')

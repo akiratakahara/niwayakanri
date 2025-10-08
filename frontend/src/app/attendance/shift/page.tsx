@@ -56,7 +56,7 @@ export default function ShiftTablePage() {
     setError(null)
 
     try {
-      const data = await apiClient.getMonthlyShift(year, month)
+      const data = await apiClient.getMonthlyShift(year, month) as ShiftData
       setShiftData(data)
     } catch (err: any) {
       setError(err.message || 'シフト表の取得に失敗しました')
