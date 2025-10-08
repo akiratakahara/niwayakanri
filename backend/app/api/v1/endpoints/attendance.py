@@ -172,7 +172,7 @@ async def get_monthly_timesheet(
     個人別月次出勤簿データを取得
     - 自分または管理者のみアクセス可能
     """
-    if current_user.id != user_id and current_user.role != "admin":
+    if current_user.get("id") != user_id and current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="アクセス権限がありません")
 
     # 対象ユーザー取得
@@ -354,7 +354,7 @@ async def get_leave_balance(
     休暇残高を取得
     - 自分または管理者のみアクセス可能
     """
-    if current_user.id != user_id and current_user.role != "admin":
+    if current_user.get("id") != user_id and current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="アクセス権限がありません")
 
     if fiscal_year is None:
@@ -486,7 +486,7 @@ async def get_timesheet_pdf(
     個人別月次出勤簿をPDFで出力
     - 自分または管理者のみアクセス可能
     """
-    if current_user.id != user_id and current_user.role != "admin":
+    if current_user.get("id") != user_id and current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="アクセス権限がありません")
 
     # 出勤簿データを取得
