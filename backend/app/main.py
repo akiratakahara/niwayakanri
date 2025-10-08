@@ -49,12 +49,18 @@ async def root():
     return {
         "message": "勤怠・社内申請システム API",
         "version": "1.0.0",
-        "status": "healthy"
+        "status": "healthy",
+        "cors_origins": settings.ALLOWED_ORIGINS
     }
 
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+@app.options("/api/v1/{path:path}")
+async def options_handler(path: str):
+    """OPTIONS リクエストを明示的に処理"""
+    return {"status": "ok"}
 
 if __name__ == "__main__":
     import uvicorn
