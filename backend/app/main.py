@@ -21,13 +21,24 @@ async def startup_event():
     print(f"[CORS] ALLOWED_ORIGINS type: {type(settings.ALLOWED_ORIGINS)}")
     print(f"[CORS] ALLOWED_ORIGINS value: {settings.ALLOWED_ORIGINS}")
 
-# CORS middleware
+# CORS middleware - ルーター追加前に設定
+# ALLOWED_ORIGINS が設定されているか確認
+if not settings.ALLOWED_ORIGINS or settings.ALLOWED_ORIGINS == ['']:
+    print("[CORS WARNING] ALLOWED_ORIGINS is empty, using wildcard for development")
+    allow_origins = ["*"]
+else:
+    allow_origins = settings.ALLOWED_ORIGINS
+
+print(f"[CORS] Final allow_origins: {allow_origins}")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
+    allow_origins=allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=3600,
 )
 
 # Include API router
