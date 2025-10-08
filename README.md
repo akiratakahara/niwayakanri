@@ -265,6 +265,39 @@ niwayakanri/
 - コードレビュー: 必須
 - テストカバレッジ: 80%以上
 
+## Railway デプロイ設定
+
+### 環境変数の設定
+
+Railwayダッシュボードで以下の環境変数を設定してください：
+
+#### バックエンド（niwayakanri-production）
+
+```bash
+ENVIRONMENT=production
+SECRET_KEY=<強力なランダム文字列>
+DATABASE_URL=<PostgreSQL接続URL>
+ALLOWED_ORIGINS=https://determined-ambition-production.up.railway.app
+DEBUG=False
+```
+
+#### フロントエンド（determined-ambition-production）
+
+```bash
+NEXT_PUBLIC_API_URL=https://niwayakanri-production.up.railway.app
+```
+
+### デプロイ後の確認
+
+1. バックエンドAPIが起動しているか確認
+   - `https://niwayakanri-production.up.railway.app/docs`
+
+2. フロントエンドが起動しているか確認
+   - `https://determined-ambition-production.up.railway.app`
+
+3. CORS設定が正しいか確認
+   - ブラウザのコンソールでCORSエラーが出ていないか
+
 ## ライセンス
 Private
 
