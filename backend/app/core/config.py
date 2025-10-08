@@ -31,7 +31,10 @@ class Settings(BaseSettings):
     @classmethod
     def parse_cors(cls, v):
         if isinstance(v, str):
-            return [origin.strip() for origin in v.split(',')]
+            # カンマ区切りまたは単一のURLを処理
+            origins = [origin.strip() for origin in v.split(',') if origin.strip()]
+            print(f"[Config] Parsed ALLOWED_ORIGINS: {origins}")
+            return origins
         return v
 
     class Config:

@@ -17,6 +17,9 @@ app = FastAPI(
 async def startup_event():
     """アプリケーション起動時にデータベースを初期化"""
     init_db()
+    # CORS設定をログ出力
+    print(f"[CORS] ALLOWED_ORIGINS type: {type(settings.ALLOWED_ORIGINS)}")
+    print(f"[CORS] ALLOWED_ORIGINS value: {settings.ALLOWED_ORIGINS}")
 
 # CORS middleware
 app.add_middleware(
