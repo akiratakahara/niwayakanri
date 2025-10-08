@@ -183,6 +183,22 @@ export default function DashboardPage() {
                 <p className="card-description">日報の確認・PDF出力</p>
               </div>
             </Link>
+
+            <Link href="/attendance/timesheet" className="card hover:shadow-lg transition-shadow">
+              <div className="card-content">
+                <h3 className="card-title text-lg">出勤簿</h3>
+                <p className="card-description">月次出勤簿を確認・PDF出力</p>
+              </div>
+            </Link>
+
+            {isAdmin && (
+              <Link href="/attendance/shift" className="card hover:shadow-lg transition-shadow">
+                <div className="card-content">
+                  <h3 className="card-title text-lg">シフト表</h3>
+                  <p className="card-description">月次シフト表を確認・PDF出力</p>
+                </div>
+              </Link>
+            )}
           </div>
 
           {/* 申請一覧 */}

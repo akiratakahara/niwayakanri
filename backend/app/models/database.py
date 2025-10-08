@@ -22,6 +22,8 @@ class User(Base):
     # Relationships
     requests = relationship("Request", back_populates="applicant", foreign_keys="Request.applicant_id")
     approvals = relationship("Request", back_populates="approver", foreign_keys="Request.approver_id")
+    leave_balances = relationship("LeaveBalance", back_populates="user")
+    daily_reports = relationship("ConstructionDailyReport", back_populates="user")
 
 
 class Request(Base):
@@ -224,4 +226,33 @@ class ConstructionDailyReport(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    user = relationship("User")
+    user = relationship("User", back_populates="daily_reports")
+
+
+class LeaveBalance(Base):
+    """休暇残高管理テーブル"""
+    __tablename__ = "leave_balances"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    fiscal_year = Column(Integer, nullable=False)  # 年度（例: 2025）
+
+    # 休暇残日数
+    paid_leave_total = Column(Float, default=0.0)  # 有給休暇付与日数
+    paid_leave_used = Column(Float, default=0.0)  # 有給休暇使用日数
+    paid_leave_balance = Column(Float, default=0.0)  # 有給休暇残日数
+
+    compensatory_leave_total = Column(Float, default=0.0)  # 代休付与日数
+    compensatory_leave_used = Column(Float, default=0.0)  # 代休使用日数
+    compensatory_leave_balance = Column(Float, default=0.0)  # 代休残日数
+
+    special_leave_total = Column(Float, default=0.0)  # 特別休暇付与日数
+    special_leave_used = Column(Float, default=0.0)  # 特別休暇使用日数
+    special_leave_balance = Column(Float, default=0.0)  # 特別休暇残日数
+
+    # 更新日時
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    user = relationship("User", back_populates="leave_balances")

@@ -467,6 +467,97 @@ export class ApiClient {
 
     return { success: true };
   }
+
+  // 勤怠管理関連
+  async getMonthlyShift(year: number, month: number) {
+    return this.request(`/api/v1/attendance/shift/${year}/${month}`)
+  }
+
+  async getMonthlyTimesheet(userId: number, year: number, month: number) {
+    return this.request(`/api/v1/attendance/timesheet/${userId}/${year}/${month}`)
+  }
+
+  async getLeaveBalance(userId: number, fiscalYear?: number) {
+    const params = fiscalYear ? `?fiscal_year=${fiscalYear}` : ''
+    return this.request(`/api/v1/attendance/balance/${userId}${params}`)
+  }
+
+  async updateLeaveBalance(userId: number, fiscalYear: number, data: {
+    paid_leave_total?: number
+    compensatory_leave_total?: number
+    special_leave_total?: number
+  }) {
+    return this.request(`/api/v1/attendance/balance/${userId}`, {
+      method: 'POST',
+      body: JSON.stringify({
+        fiscal_year: fiscalYear,
+        ...data
+      })
+    })
+  }
+
+  async downloadShiftTablePdf(year: number, month: number) {
+    const url = `${this.baseUrl}/api/v1/attendance/shift/${year}/${month}/pdf`
+    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null
+
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error(`PDF download failed: ${response.status}`)
+    }
+
+    const blob = await response.blob()
+    const filename = `shift_table_${year}_${month.toString().padStart(2, '0')}.pdf`
+
+    // ダウンロード処理
+    const downloadUrl = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = downloadUrl
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(downloadUrl)
+
+    return { success: true }
+  }
+
+  async downloadTimesheetPdf(userId: number, year: number, month: number) {
+    const url = `${this.baseUrl}/api/v1/attendance/timesheet/${userId}/${year}/${month}/pdf`
+    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null
+
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error(`PDF download failed: ${response.status}`)
+    }
+
+    const blob = await response.blob()
+    const contentDisposition = response.headers.get('Content-Disposition')
+    const filename = contentDisposition
+      ? contentDisposition.split('filename=')[1]?.replace(/"/g, '')
+      : `timesheet_${year}_${month.toString().padStart(2, '0')}.pdf`
+
+    // ダウンロード処理
+    const downloadUrl = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = downloadUrl
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(downloadUrl)
+
+    return { success: true }
+  }
 }
 
 export const apiClient = new ApiClient()

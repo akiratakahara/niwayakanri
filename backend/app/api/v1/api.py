@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, requests, users, approvals, admin, setup, construction_daily
+from app.api.v1.endpoints import auth, requests, users, approvals, admin, setup, construction_daily, attendance
 
 api_router = APIRouter()
 
@@ -23,6 +23,9 @@ api_router.include_router(setup.router, prefix="/setup", tags=["セットアッ�
 
 # 工事日報関連のエンドポイント
 api_router.include_router(construction_daily.router, prefix="/construction-daily", tags=["工事日報"])
+
+# 勤怠管理関連のエンドポイント
+api_router.include_router(attendance.router, prefix="/attendance", tags=["勤怠管理"])
 
 
 
