@@ -16,6 +16,8 @@ RUN apt-get update \
         libpq-dev \
         curl \
         fonts-noto-cjk \
+    && echo "Checking installed fonts:" \
+    && find /usr/share/fonts -name "*Noto*CJK*" -type f \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies

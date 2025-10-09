@@ -222,8 +222,26 @@ def generate_construction_daily_pdf(report, user) -> bytes:
 
 def _register_japanese_font() -> tuple[bool, str]:
     """日本語フォントを登録"""
+    import os
+    import subprocess
     font_registered = False
     font_name = 'Helvetica'
+
+    # デバッグ：利用可能なフォントを確認
+    print("[PDF] Checking available fonts...")
+    try:
+        result = subprocess.run(
+            ['find', '/usr/share/fonts', '-name', '*Noto*CJK*', '-type', 'f'],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        if result.stdout:
+            print(f"[PDF] Found fonts:\n{result.stdout}")
+        else:
+            print("[PDF] No Noto CJK fonts found")
+    except Exception as e:
+        print(f"[PDF] Font check failed: {e}")
 
     # 試すフォントパスとインデックスのリスト
     font_paths = [
@@ -240,6 +258,12 @@ def _register_japanese_font() -> tuple[bool, str]:
     ]
 
     for font_path, subfont_indices in font_paths:
+        # ファイルの存在確認
+        if not os.path.exists(font_path):
+            print(f"[PDF] Font file not found: {font_path}")
+            continue
+
+        print(f"[PDF] Trying to load: {font_path}")
         for subfont_index in subfont_indices:
             try:
                 if subfont_index is not None:
@@ -248,9 +272,10 @@ def _register_japanese_font() -> tuple[bool, str]:
                     pdfmetrics.registerFont(TTFont('Japanese', font_path))
                 font_registered = True
                 font_name = 'Japanese'
-                print(f"[PDF] Font registered successfully: {font_path} (index={subfont_index})")
+                print(f"[PDF] ✓ Font registered successfully: {font_path} (index={subfont_index})")
                 break
             except Exception as e:
+                print(f"[PDF] ✗ Failed to load {font_path} (index={subfont_index}): {e}")
                 continue
         if font_registered:
             break
