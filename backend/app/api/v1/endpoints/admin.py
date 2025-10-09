@@ -1,45 +1,70 @@
 from fastapi import APIRouter, Depends
 from datetime import datetime, date
+from sqlalchemy.orm import Session
+from sqlalchemy import func
 from app.core.auth import get_current_admin_user
+from app.core.database import get_db
+from app.models.database import User, Request
 
 router = APIRouter()
 
 @router.get("/stats")
-async def get_admin_stats(current_user: dict = Depends(get_current_admin_user)):
+async def get_admin_stats(
+    current_user: dict = Depends(get_current_admin_user),
+    db: Session = Depends(get_db)
+):
     """
-    管理画面用の統計情報を取得
+    管理画面用の統計情報を取得（実データ）
     """
-    # 簡単な実装（後でデータベースから取得）
+    # ユーザー統計
+    total_users = db.query(func.count(User.id)).scalar()
+    active_users = db.query(func.count(User.id)).filter(User.is_active == True).scalar()
+
+    # 申請統計
+    total_requests = db.query(func.count(Request.id)).scalar()
+    pending_requests = db.query(func.count(Request.id)).filter(Request.status == "applied").scalar()
+    approved_requests = db.query(func.count(Request.id)).filter(Request.status == "approved").scalar()
+    rejected_requests = db.query(func.count(Request.id)).filter(Request.status == "rejected").scalar()
+
+    # 申請種別ごとの統計
+    requests_by_type = {}
+    request_types = ["leave", "overtime", "expense", "holiday_work", "reimbursement", "settlement"]
+    for req_type in request_types:
+        count = db.query(func.count(Request.id)).filter(Request.type == req_type).scalar()
+        requests_by_type[req_type] = count or 0
+
+    # 申請種別ごとの承認待ち件数
+    pending_by_type = {}
+    for req_type in request_types:
+        count = db.query(func.count(Request.id)).filter(
+            Request.type == req_type,
+            Request.status == "applied"
+        ).scalar()
+        pending_by_type[req_type] = count or 0
+
+    # 最近のアクティビティ（直近10件）
+    recent_requests = db.query(Request).order_by(Request.created_at.desc()).limit(10).all()
+    recent_activities = []
+    for req in recent_requests:
+        user = db.query(User).filter(User.id == req.applicant_id).first()
+        recent_activities.append({
+            "id": str(req.id),
+            "user_name": user.name if user else "不明",
+            "action": "申請を作成",
+            "target": req.title,
+            "timestamp": req.created_at.isoformat() if req.created_at else datetime.now().isoformat()
+        })
+
     stats = {
-        "total_users": 25,
-        "active_users": 23,
-        "total_requests": 156,
-        "pending_requests": 8,
-        "approved_requests": 132,
-        "rejected_requests": 16,
-        "requests_this_month": 34,
-        "requests_by_type": {
-            "leave": 78,
-            "overtime": 45,
-            "expense": 23,
-            "holiday_work": 10
-        },
-        "recent_activities": [
-            {
-                "id": "1",
-                "user_name": "山田 太郎",
-                "action": "申請を作成",
-                "target": "有給休暇申請",
-                "timestamp": datetime.now().isoformat()
-            },
-            {
-                "id": "2",
-                "user_name": "管理者",
-                "action": "申請を承認",
-                "target": "残業申請",
-                "timestamp": datetime.now().isoformat()
-            }
-        ]
+        "total_users": total_users or 0,
+        "active_users": active_users or 0,
+        "total_requests": total_requests or 0,
+        "pending_requests": pending_requests or 0,
+        "approved_requests": approved_requests or 0,
+        "rejected_requests": rejected_requests or 0,
+        "requests_by_type": requests_by_type,
+        "pending_by_type": pending_by_type,
+        "recent_activities": recent_activities
     }
 
     return {
@@ -48,42 +73,29 @@ async def get_admin_stats(current_user: dict = Depends(get_current_admin_user)):
     }
 
 @router.get("/users")
-async def get_all_users(current_user: dict = Depends(get_current_admin_user)):
+async def get_all_users(
+    current_user: dict = Depends(get_current_admin_user),
+    db: Session = Depends(get_db)
+):
     """
-    全ユーザー一覧を取得
+    全ユーザー一覧を取得（実データ）
     """
-    users = [
-        {
-            "id": "1",
-            "name": "管理者 太郎",
-            "email": "admin@example.com",
-            "role": "admin",
-            "department": "総務部",
-            "position": "部長",
-            "is_active": True
-        },
-        {
-            "id": "2",
-            "name": "山田 太郎",
-            "email": "yamada@example.com",
-            "role": "employee",
-            "department": "営業部",
-            "position": "課長",
-            "is_active": True
-        },
-        {
-            "id": "3",
-            "name": "佐藤 花子",
-            "email": "sato@example.com",
-            "role": "employee",
-            "department": "開発部",
-            "position": "主任",
-            "is_active": True
-        }
-    ]
+    users = db.query(User).all()
+
+    users_data = []
+    for user in users:
+        users_data.append({
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "role": user.role,
+            "department": user.department,
+            "position": user.position,
+            "is_active": user.is_active
+        })
 
     return {
         "success": True,
-        "data": users,
-        "total": len(users)
+        "data": users_data,
+        "total": len(users_data)
     }
