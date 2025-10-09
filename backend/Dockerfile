@@ -16,8 +16,12 @@ RUN apt-get update \
         libpq-dev \
         curl \
         fonts-noto-cjk \
-    && echo "Checking installed fonts:" \
-    && find /usr/share/fonts -name "*Noto*CJK*" -type f \
+        fonts-ipafont \
+        fonts-ipaexfont \
+    && echo "=== Installed Japanese fonts ===" \
+    && fc-list :lang=ja family \
+    && echo "=== Font files ===" \
+    && find /usr/share/fonts -name "*.ttf" -o -name "*.ttc" -o -name "*.otf" | grep -i -E "(noto|ipa)" \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
