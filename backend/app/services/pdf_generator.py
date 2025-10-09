@@ -225,25 +225,38 @@ def _register_japanese_font() -> tuple[bool, str]:
     font_registered = False
     font_name = 'Helvetica'
 
-    try:
-        # Windowsの場合
-        pdfmetrics.registerFont(TTFont('Japanese', 'C:\\Windows\\Fonts\\msgothic.ttc', subfontIndex=0))
-        font_registered = True
-        font_name = 'Japanese'
-    except:
-        try:
-            # Linuxの場合（Noto Sans CJK JP - Docker環境）
-            pdfmetrics.registerFont(TTFont('Japanese', '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc', subfontIndex=0))
-            font_registered = True
-            font_name = 'Japanese'
-        except:
+    # 試すフォントパスとインデックスのリスト
+    font_paths = [
+        # Windows
+        ('C:\\Windows\\Fonts\\msgothic.ttc', [0]),
+        # Debian/Ubuntu - fonts-noto-cjk パッケージ
+        # NotoSansCJK-Regular.ttc には複数の言語が含まれる（JP, KR, SC, TC）
+        ('/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc', [0, 1, 2, 3]),
+        ('/usr/share/fonts/opentype/noto/NotoSerifCJK-Regular.ttc', [0, 1, 2, 3]),
+        ('/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc', [0, 1, 2, 3]),
+        # IPAフォント（バックアップ）
+        ('/usr/share/fonts/truetype/fonts-japanese-gothic.ttf', [None]),
+        ('/usr/share/fonts/opentype/ipafont-gothic/ipagp.ttf', [None]),
+    ]
+
+    for font_path, subfont_indices in font_paths:
+        for subfont_index in subfont_indices:
             try:
-                # Linuxの場合（別のパス）
-                pdfmetrics.registerFont(TTFont('Japanese', '/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc', subfontIndex=0))
+                if subfont_index is not None:
+                    pdfmetrics.registerFont(TTFont('Japanese', font_path, subfontIndex=subfont_index))
+                else:
+                    pdfmetrics.registerFont(TTFont('Japanese', font_path))
                 font_registered = True
                 font_name = 'Japanese'
-            except:
-                pass
+                print(f"[PDF] Font registered successfully: {font_path} (index={subfont_index})")
+                break
+            except Exception as e:
+                continue
+        if font_registered:
+            break
+
+    if not font_registered:
+        print(f"[PDF] Warning: Japanese font not found, using Helvetica")
 
     return font_registered, font_name
 
