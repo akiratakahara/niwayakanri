@@ -247,16 +247,15 @@ def _register_japanese_font() -> tuple[bool, str]:
     font_paths = [
         # Windows
         ('C:\\Windows\\Fonts\\msgothic.ttc', [0]),
-        # IPAフォント（確実に動作する）- 優先
+        # IPAフォント（確実に動作する）- 最優先
         ('/usr/share/fonts/truetype/ipafont/ipagp.ttf', [None]),
         ('/usr/share/fonts/truetype/ipafont/ipag.ttf', [None]),
         ('/usr/share/fonts/opentype/ipafont-gothic/ipagp.ttf', [None]),
         ('/usr/share/fonts/opentype/ipaexfont-gothic/ipaexg.ttf', [None]),
-        # Debian/Ubuntu - fonts-noto-cjk パッケージ
-        # NotoSansCJK-Regular.ttc には複数の言語が含まれる（JP, KR, SC, TC）
-        ('/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc', [0, 1, 2, 3]),
-        ('/usr/share/fonts/opentype/noto/NotoSerifCJK-Regular.ttc', [0, 1, 2, 3]),
-        ('/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc', [0, 1, 2, 3]),
+        # Noto Sans JP (TrueType - PostScriptではない)
+        ('/usr/share/fonts/truetype/noto-cjk/NotoSansJP-Regular.ttf', [None]),
+        ('/usr/share/fonts/truetype/noto/NotoSansJP-Regular.ttf', [None]),
+        ('/usr/share/fonts/truetype/noto-cjk/NotoSansCJK-Regular.ttf', [None]),
     ]
 
     for font_path, subfont_indices in font_paths:

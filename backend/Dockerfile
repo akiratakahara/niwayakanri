@@ -15,13 +15,14 @@ RUN apt-get update \
         build-essential \
         libpq-dev \
         curl \
-        fonts-noto-cjk \
-        fonts-ipafont \
-        fonts-ipaexfont \
+        fonts-ipafont-gothic \
+        fonts-ipafont-mincho \
+        fonts-ipaexfont-gothic \
+        fonts-ipaexfont-mincho \
     && echo "=== Installed Japanese fonts ===" \
     && fc-list :lang=ja family \
-    && echo "=== Font files ===" \
-    && find /usr/share/fonts -name "*.ttf" -o -name "*.ttc" -o -name "*.otf" | grep -i -E "(noto|ipa)" \
+    && echo "=== Font files (TrueType only) ===" \
+    && find /usr/share/fonts -name "*.ttf" | grep -i ipa \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
