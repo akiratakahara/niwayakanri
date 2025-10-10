@@ -273,10 +273,10 @@ def _register_japanese_font() -> tuple[bool, str]:
                     pdfmetrics.registerFont(TTFont('Japanese', font_path))
                 font_registered = True
                 font_name = 'Japanese'
-                print(f"[PDF] ✓ Font registered successfully: {font_path} (index={subfont_index})")
+                print(f"[PDF] SUCCESS: Font registered: {font_path} (index={subfont_index})")
                 break
             except Exception as e:
-                print(f"[PDF] ✗ Failed to load {font_path} (index={subfont_index}): {e}")
+                print(f"[PDF] FAILED: Could not load {font_path} (index={subfont_index}): {e}")
                 continue
         if font_registered:
             break
