@@ -19,10 +19,6 @@ RUN apt-get update \
         fonts-ipafont-mincho \
         fonts-ipaexfont-gothic \
         fonts-ipaexfont-mincho \
-    && echo "=== Installed Japanese fonts ===" \
-    && fc-list :lang=ja family \
-    && echo "=== Font files (TrueType only) ===" \
-    && find /usr/share/fonts -name "*.ttf" | grep -i ipa \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
