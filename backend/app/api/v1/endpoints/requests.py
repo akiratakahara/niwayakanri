@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime, date
@@ -120,8 +120,11 @@ async def get_requests(
     """
     申請一覧を取得
     """
-    # データベースから申請を取得
-    query = db.query(RequestModel)
+    # データベースから申請を取得（リレーションを事前読み込み）
+    query = db.query(RequestModel).options(
+        joinedload(RequestModel.applicant),
+        joinedload(RequestModel.approver)
+    )
 
     # 管理者以外は自分の申請のみ表示
     if current_user.get("role") != "admin":
@@ -129,16 +132,23 @@ async def get_requests(
 
     requests = query.order_by(RequestModel.created_at.desc()).all()
 
+    # 仮払金申請情報を一括取得
+    expense_request_ids = [req.id for req in requests if req.type == "expense"]
+    expense_requests = {}
+    if expense_request_ids:
+        expenses = db.query(ExpenseRequestModel).filter(
+            ExpenseRequestModel.request_id.in_(expense_request_ids)
+        ).all()
+        expense_requests = {exp.request_id: exp for exp in expenses}
+
     # レスポンスデータを構築
     requests_data = []
     for req in requests:
-        applicant = db.query(User).filter(User.id == req.applicant_id).first()
-
         request_dict = {
             "id": str(req.id),
             "type": req.type,
             "applicant_id": str(req.applicant_id),
-            "applicant_name": applicant.name if applicant else "不明",
+            "applicant_name": req.applicant.name if req.applicant else "不明",
             "status": req.status,
             "title": req.title,
             "description": req.description,
@@ -147,18 +157,15 @@ async def get_requests(
         }
 
         # 仮払金申請の追加情報
-        if req.type == "expense":
-            expense = db.query(ExpenseRequestModel).filter(
-                ExpenseRequestModel.request_id == req.id
-            ).first()
-            if expense:
-                request_dict.update({
-                    "site_name": expense.site_name,
-                    "request_amount": expense.request_amount,
-                    "application_date": expense.application_date.isoformat(),
-                    "received_date": expense.received_date.isoformat() if expense.received_date else None,
-                    "is_settled": False  # TODO: 精算済みフラグの判定
-                })
+        if req.type == "expense" and req.id in expense_requests:
+            expense = expense_requests[req.id]
+            request_dict.update({
+                "site_name": expense.site_name,
+                "request_amount": expense.request_amount,
+                "application_date": expense.application_date.isoformat(),
+                "received_date": expense.received_date.isoformat() if expense.received_date else None,
+                "is_settled": False  # TODO: 精算済みフラグの判定
+            })
 
         requests_data.append(request_dict)
 
