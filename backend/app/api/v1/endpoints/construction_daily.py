@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 from datetime import date
 import io
+from urllib.parse import quote
 
 from app.core.auth import get_current_user
 from app.core.database import get_db
@@ -180,10 +181,12 @@ async def get_construction_daily_pdf(
     pdf_bytes = generate_construction_daily_pdf(report, user)
 
     # PDFをStreamingResponseで返す
+    filename = f"construction_daily_{report.report_date.strftime('%Y%m%d')}.pdf"
+    filename_encoded = quote(f"工事日報_{report.report_date.strftime('%Y%m%d')}_{report.site_name}.pdf")
     return StreamingResponse(
         io.BytesIO(pdf_bytes),
         media_type="application/pdf",
         headers={
-            "Content-Disposition": f"attachment; filename=construction_daily_{report.report_date.strftime('%Y%m%d')}_{report.site_name}.pdf"
+            "Content-Disposition": f"attachment; filename={filename}; filename*=UTF-8''{filename_encoded}"
         }
     )

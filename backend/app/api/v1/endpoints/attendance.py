@@ -5,6 +5,7 @@ from sqlalchemy import and_, or_
 from typing import List, Dict, Any
 from datetime import datetime, date, timedelta
 import calendar
+from urllib.parse import quote
 from app.core.database import get_db
 from app.core.auth import get_current_user
 from app.models.database import (
@@ -475,11 +476,12 @@ async def get_shift_table_pdf(
 
     # レスポンス
     filename = f"shift_table_{year}_{month:02d}.pdf"
+    filename_encoded = quote(f"シフト表_{year}_{month:02d}.pdf")
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
         headers={
-            "Content-Disposition": f"attachment; filename={filename}"
+            "Content-Disposition": f"attachment; filename={filename}; filename*=UTF-8''{filename_encoded}"
         }
     )
 
@@ -507,11 +509,12 @@ async def get_timesheet_pdf(
 
     # レスポンス
     user = db.query(User).filter(User.id == user_id).first()
-    filename = f"timesheet_{user.name}_{year}_{month:02d}.pdf"
+    filename = f"timesheet_{year}_{month:02d}.pdf"
+    filename_encoded = quote(f"出勤簿_{user.name}_{year}_{month:02d}.pdf")
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
         headers={
-            "Content-Disposition": f"attachment; filename={filename}"
+            "Content-Disposition": f"attachment; filename={filename}; filename*=UTF-8''{filename_encoded}"
         }
     )
