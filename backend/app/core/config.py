@@ -16,8 +16,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
 
     # CORS設定
-    ALLOWED_ORIGINS: Union[List[str], str] = "http://localhost:3000,http://localhost:3001,https://niwayakanri.com"
-    ALLOWED_HOSTS: Union[List[str], str] = "localhost,niwayakanri.com"
+    ALLOWED_ORIGINS: Union[List[str], str] = "http://localhost:3000,http://localhost:3001,https://niwayakanri.com,https://determined-ambition-production.up.railway.app"
+    ALLOWED_HOSTS: Union[List[str], str] = "localhost,niwayakanri.com,niwayakanri-production.up.railway.app"
 
     # アプリケーション設定
     APP_NAME: str = "勤怠・社内申請システム"
